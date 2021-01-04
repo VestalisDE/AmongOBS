@@ -7,6 +7,6 @@ yarn-error.log
 .vs/
 bin/
 obj/
-.nsproj.user
-.nsproj
-.sln
+*.nsproj.user
+*.nsproj
+*.sln
