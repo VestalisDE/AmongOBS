@@ -1,0 +1,12 @@
+.DS_Store
+dist/
+node_modules/
+thumbs.db
+.idea/
+yarn-error.log
+.vs/
+bin/
+obj/
+.nsproj.user
+.nsproj
+.sln

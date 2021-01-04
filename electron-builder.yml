@@ -1,0 +1,14 @@
+appId: de.vestalis.amongobs
+productName: AmongOBS
+copyright: Copyright © 2021 VestalisDE
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+win:
+  publish:
+    - github

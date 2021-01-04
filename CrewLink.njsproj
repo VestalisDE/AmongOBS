@@ -1,0 +1,255 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{d68f16e1-a8ad-4821-bd4b-122a0f02f3ec}</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <ProjectView>ShowAllFiles</ProjectView>
+    <StartupFile />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
+    <EnableTypeScript>true</EnableTypeScript>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">16.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <ItemGroup>
+    <Content Include="logo.png" />
+    <Content Include="package.json" />
+    <None Include="tsconfig.json" />
+    <Content Include="README.md" />
+    <Content Include="TODO.md" />
+    <Content Include="dist\.renderer-index-template.html" />
+    <Content Include="resources\icon.png" />
+    <Content Include="resources\icon.ico" />
+    <Content Include="dist\main\f583482f08a3358f556e.hot-update.json" />
+    <Content Include="dist\main\f5dc8562451f938ff699.hot-update.json" />
+    <Content Include="dist\renderer\renderer.js.LICENSE.txt" />
+    <Content Include="dist\renderer\index.html" />
+    <Content Include="dist\renderer\styles.css" />
+    <Content Include="dist\renderer\imgs\22--hats.png" />
+    <Content Include="dist\renderer\imgs\25--hats.png" />
+    <Content Include="dist\renderer\imgs\46--hats.png" />
+    <Content Include="dist\renderer\imgs\59--hats.png" />
+    <Content Include="dist\renderer\imgs\64--hats.png" />
+    <Content Include="dist\renderer\imgs\65--hats.png" />
+    <Content Include="dist\renderer\imgs\80--hats.png" />
+    <Content Include="dist\renderer\imgs\93--hats.png" />
+    <None Include="src\common\AmongUsState.ts" />
+    <None Include="src\common\Errors.ts" />
+    <None Include="src\common\ipc-messages.ts" />
+    <None Include="src\common\ISettings.d.ts" />
+    <None Include="src\main\GameReader.ts" />
+    <None Include="src\main\hook.ts" />
+    <None Include="src\main\index.ts" />
+    <None Include="src\main\ipc-handlers.ts" />
+    <None Include="src\main\memoryjs.d.ts" />
+    <None Include="src\main\offsetStore.ts" />
+    <None Include="src\main\structron.d.ts" />
+    <None Include="src\renderer\cosmetics.ts" />
+    <None Include="src\renderer\index.ts" />
+    <None Include="src\renderer\theme.ts" />
+    <None Include="src\renderer\App.tsx" />
+    <None Include="src\renderer\Avatar.tsx" />
+    <None Include="src\renderer\contexts.tsx" />
+    <None Include="src\renderer\Footer.tsx" />
+    <None Include="src\renderer\Menu.tsx" />
+    <None Include="src\renderer\SupportLink.tsx" />
+    <None Include="src\renderer\Game.tsx" />
+    <Content Include="src\renderer\css\index.css" />
+    <Content Include="static\hats\1.png" />
+    <Content Include="static\hats\10.png" />
+    <Content Include="static\hats\11.png" />
+    <Content Include="static\hats\12.png" />
+    <Content Include="static\hats\13.png" />
+    <Content Include="static\hats\14.png" />
+    <Content Include="static\hats\15.png" />
+    <Content Include="static\hats\16.png" />
+    <Content Include="static\hats\17.png" />
+    <Content Include="static\hats\18.png" />
+    <Content Include="static\hats\19.png" />
+    <Content Include="static\hats\2.png" />
+    <Content Include="static\hats\20.png" />
+    <Content Include="static\hats\21.png" />
+    <Content Include="static\hats\22.png" />
+    <Content Include="static\hats\23.png" />
+    <Content Include="static\hats\24.png" />
+    <Content Include="static\hats\25.png" />
+    <Content Include="static\hats\26.png" />
+    <Content Include="static\hats\27.png" />
+    <Content Include="static\hats\28.png" />
+    <Content Include="static\hats\29.png" />
+    <Content Include="static\hats\3.png" />
+    <Content Include="static\hats\30.png" />
+    <Content Include="static\hats\31.png" />
+    <Content Include="static\hats\32.png" />
+    <Content Include="static\hats\33.png" />
+    <Content Include="static\hats\34.png" />
+    <Content Include="static\hats\35.png" />
+    <Content Include="static\hats\36.png" />
+    <Content Include="static\hats\37.png" />
+    <Content Include="static\hats\38.png" />
+    <Content Include="static\hats\39.png" />
+    <Content Include="static\hats\4.png" />
+    <Content Include="static\hats\40.png" />
+    <Content Include="static\hats\41.png" />
+    <Content Include="static\hats\42.png" />
+    <Content Include="static\hats\43.png" />
+    <Content Include="static\hats\44.png" />
+    <Content Include="static\hats\45.png" />
+    <Content Include="static\hats\46.png" />
+    <Content Include="static\hats\47.png" />
+    <Content Include="static\hats\48.png" />
+    <Content Include="static\hats\49.png" />
+    <Content Include="static\hats\5.png" />
+    <Content Include="static\hats\50.png" />
+    <Content Include="static\hats\51.png" />
+    <Content Include="static\hats\52.png" />
+    <Content Include="static\hats\53.png" />
+    <Content Include="static\hats\54.png" />
+    <Content Include="static\hats\55.png" />
+    <Content Include="static\hats\56.png" />
+    <Content Include="static\hats\57.png" />
+    <Content Include="static\hats\58.png" />
+    <Content Include="static\hats\59.png" />
+    <Content Include="static\hats\6.png" />
+    <Content Include="static\hats\60.png" />
+    <Content Include="static\hats\61.png" />
+    <Content Include="static\hats\62.png" />
+    <Content Include="static\hats\63.png" />
+    <Content Include="static\hats\64.png" />
+    <Content Include="static\hats\65.png" />
+    <Content Include="static\hats\66.png" />
+    <Content Include="static\hats\67.png" />
+    <Content Include="static\hats\68.png" />
+    <Content Include="static\hats\69.png" />
+    <Content Include="static\hats\7.png" />
+    <Content Include="static\hats\70.png" />
+    <Content Include="static\hats\71.png" />
+    <Content Include="static\hats\72.png" />
+    <Content Include="static\hats\73.png" />
+    <Content Include="static\hats\74.png" />
+    <Content Include="static\hats\75.png" />
+    <Content Include="static\hats\76.png" />
+    <Content Include="static\hats\77.png" />
+    <Content Include="static\hats\78.png" />
+    <Content Include="static\hats\79.png" />
+    <Content Include="static\hats\8.png" />
+    <Content Include="static\hats\80.png" />
+    <Content Include="static\hats\81.png" />
+    <Content Include="static\hats\82.png" />
+    <Content Include="static\hats\83.png" />
+    <Content Include="static\hats\84.png" />
+    <Content Include="static\hats\85.png" />
+    <Content Include="static\hats\86.png" />
+    <Content Include="static\hats\87.png" />
+    <Content Include="static\hats\88.png" />
+    <Content Include="static\hats\89.png" />
+    <Content Include="static\hats\9.png" />
+    <Content Include="static\hats\90.png" />
+    <Content Include="static\hats\91.png" />
+    <Content Include="static\hats\92.png" />
+    <Content Include="static\hats\93.png" />
+    <Content Include="static\players\black-alive.png" />
+    <Content Include="static\players\black-dead.png" />
+    <Content Include="static\players\blue-alive.png" />
+    <Content Include="static\players\blue-dead.png" />
+    <Content Include="static\players\brown-alive.png" />
+    <Content Include="static\players\brown-dead.png" />
+    <Content Include="static\players\cyan-alive.png" />
+    <Content Include="static\players\cyan-dead.png" />
+    <Content Include="static\players\green-alive.png" />
+    <Content Include="static\players\green-dead.png" />
+    <Content Include="static\players\lime-alive.png" />
+    <Content Include="static\players\lime-dead.png" />
+    <Content Include="static\players\orange-alive.png" />
+    <Content Include="static\players\orange-dead.png" />
+    <Content Include="static\players\pink-alive.png" />
+    <Content Include="static\players\pink-dead.png" />
+    <Content Include="static\players\purple-alive.png" />
+    <Content Include="static\players\purple-dead.png" />
+    <Content Include="static\players\red-alive.png" />
+    <Content Include="static\players\red-dead.png" />
+    <Content Include="static\players\white-alive.png" />
+    <Content Include="static\players\white-dead.png" />
+    <Content Include="static\players\yellow-alive.png" />
+    <Content Include="static\players\yellow-dead.png" />
+    <Content Include="static\skins\1.png" />
+    <Content Include="static\skins\10.png" />
+    <Content Include="static\skins\11.png" />
+    <Content Include="static\skins\12.png" />
+    <Content Include="static\skins\13.png" />
+    <Content Include="static\skins\14.png" />
+    <Content Include="static\skins\15.png" />
+    <Content Include="static\skins\2.png" />
+    <Content Include="static\skins\3.png" />
+    <Content Include="static\skins\4.png" />
+    <Content Include="static\skins\5.png" />
+    <Content Include="static\skins\6.png" />
+    <Content Include="static\skins\7.png" />
+    <Content Include="static\skins\8.png" />
+    <Content Include="static\skins\9.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="CrewLink" />
+    <Folder Include="CrewLink\CrewLink" />
+    <Folder Include="dist" />
+    <Folder Include="dist\main" />
+    <Folder Include="dist\renderer" />
+    <Folder Include="dist\renderer\imgs" />
+    <Folder Include="dist\renderer\media" />
+    <Folder Include="resources" />
+    <Folder Include="src" />
+    <Folder Include="src\common" />
+    <Folder Include="src\main" />
+    <Folder Include="src\renderer" />
+    <Folder Include="src\renderer\css" />
+    <Folder Include="static" />
+    <Folder Include="static\hats" />
+    <Folder Include="static\players" />
+    <Folder Include="static\skins" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>False</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>0</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost:48022/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>True</UseCustomServer>
+          <CustomServerUrl>http://localhost:1337</CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}" User="">
+        <WebProjectProperties>
+          <StartPageUrl>
+          </StartPageUrl>
+          <StartAction>CurrentPage</StartAction>
+          <AspNetDebugging>True</AspNetDebugging>
+          <SilverlightDebugging>False</SilverlightDebugging>
+          <NativeDebugging>False</NativeDebugging>
+          <SQLDebugging>False</SQLDebugging>
+          <ExternalProgram>
+          </ExternalProgram>
+          <StartExternalURL>
+          </StartExternalURL>
+          <StartCmdLineArguments>
+          </StartCmdLineArguments>
+          <StartWorkingDirectory>
+          </StartWorkingDirectory>
+          <EnableENC>False</EnableENC>
+          <AlwaysStartWebServerOnDebug>False</AlwaysStartWebServerOnDebug>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>
