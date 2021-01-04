@@ -5,7 +5,7 @@
   "description": "Scene switcher for streamers, supporting OBS Studio and Streamlabs OBS",
   "repository": {
     "type": "git",
-    "url": "https://VestalisDE/AmongOBS.git"
+    "url": "https://github.com/VestalisDE/AmongOBS.git"
   },
   "funding": {
     "type": "individual",

@@ -77,24 +77,24 @@ const WebSocket = require('ws');
 const SockJS = require('sockjs-client');
 
 const obsType = 1;
-let socket: WebSocket | SockJS | boolean = false;
+let socket: WebSocket | typeof SockJS | boolean = false;
 
 /********** START OBS SOCKETS **********/
 if (obsType == 1) {
 	const socketURL = 'ws://localhost:4444';
 	socket = new WebSocket(socketURL);
 
-	socket.onopen = function (e) {
+	socket.onopen = function (e: any) {
 		console.log("[open] OBS Connection established");
 		//	socket.send('{"request-type":"SetHeartbeat", "message-id":"1", "enable": false}');
 		//	socket.send('{"request-type":"GetSceneList", "message-id":"2"}');
 	};
 
-	socket.onmessage = function (event) {
+	socket.onmessage = function (event: any) {
 		console.log(`[message] Data received from server: ${event.data}`);
 	};
 
-	socket.onclose = function (event) {
+	socket.onclose = function (event: any) {
 		if (event.wasClean) {
 			console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
 		} else {
@@ -104,13 +104,13 @@ if (obsType == 1) {
 		}
 	};
 
-	socket.onerror = function (error) {
+	socket.onerror = function (error: any) {
 		console.log(`[error] ${error.message}`);
 	};
 }
 /********** END OBS SOCKETS **********/
 
-/********** START SLOBS SOCKETS **********/
+/********** START SLOBS SOCKETS ********** /
 if (obsType == 2) {
 	const socketURL = 'http://localhost:59650/api';
 	const token = '28ed47a66b0e1558bca562fb3b768c91fcba342';
@@ -149,9 +149,11 @@ const Game: React.FC<GameProps> = function ({
 					case 1:
 						sceneId = 'AmongUs_Lobby';
 						break;
+					/*
 					case 2:
 						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
 						break;
+						*/
 				}
 				setOtherDead({});
 				break;
@@ -159,10 +161,10 @@ const Game: React.FC<GameProps> = function ({
 				switch (obsType) {
 					case 1:
 						sceneId = 'AmongUs_Tasks';
-						break;
+						break;/*
 					case 2:
 						sceneId = 'scene_5ad9a324-2aa7-48e8-a78e-1d0ae0bc16b2';
-						break;
+						break;*/
 				}
 				if (!gameState.players) return;
 				setOtherDead((old) => {
@@ -176,20 +178,20 @@ const Game: React.FC<GameProps> = function ({
 				switch (obsType) {
 					case 1:
 						sceneId = 'AmongUs_Discussion';
-						break;
+						break;/*
 					case 2:
 						sceneId = 'scene_5ad9a324-2aa7-48e8-a78e-1d0ae0bc16b2';
-						break;
+						break;*/
 				}
 				break;
 			case GameState.MENU:
 				switch (obsType) {
 					case 1:
 						sceneId = 'AmongUs_Lobby';
-						break;
+						break;/*
 					case 2:
 						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;
+						break;*/
 				}
 				break;
 			case GameState.UNKNOWN:
@@ -197,10 +199,10 @@ const Game: React.FC<GameProps> = function ({
 				switch (obsType) {
 					case 1:
 						sceneId = 'AmongUs_Lobby';
-						break;
+						break;/*
 					case 2:
 						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;
+						break;*/
 				}
 		}
 
@@ -209,10 +211,10 @@ const Game: React.FC<GameProps> = function ({
 			switch (obsType) {
 				case 1:
 					socket.send(JSON.stringify({ 'message-id': messageId, 'request-type': 'SetCurrentScene', 'scene-name': sceneId, }));
-					break;
+					break;/*
 				case 2:
 					socket.send(JSON.stringify({ id: messageId, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));
-					break;
+					break;*/
 			}
 		}
 	}, [gameState.gameState]);
@@ -225,6 +227,7 @@ const Game: React.FC<GameProps> = function ({
 		}
 	}, [gameState.players]);
 
+	/*
 	const otherPlayers = useMemo(() => {
 		let otherPlayers: Player[];
 		if (
@@ -238,6 +241,7 @@ const Game: React.FC<GameProps> = function ({
 
 		return otherPlayers;
 	}, [gameState]);
+	*/
 
 	const allPlayers = useMemo(() => {
 		let allPlayers: Player[];
