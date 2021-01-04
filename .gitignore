@@ -1,14 +1,13 @@
 .DS_Store
+bin/
 dist/
 node_modules/
+obj/
 thumbs.db
 .idea/
 yarn-error.log
 .vs/
-bin/
-obj/
 *.nsproj.user
+*.user
 *.nsproj
 *.sln
-*.njsproj
-*.user
