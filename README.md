@@ -7,12 +7,15 @@
   <p align="center">
     Scene switcher for streamers, supporting <a href="https://obsproject.com/">OBS Studio</a> and <a href="https://streamlabs.com/streamlabs-obs">Streamlabs OBS</a>
     <br />
-    <a href="https://github.com/VestalisDE/AmongOBS/issues">Report Bug / Request Feature</a> · <a href="#installation"><b>INSTALLATION INSTRUCTIONS</b></a>
+    <a href="https://github.com/VestalisDE/AmongOBS/issues">Report Bug / Request Feature</a> Â· <a href="#installation"><b>INSTALLATION INSTRUCTIONS</b></a>
   </p>
   <p align="center">
     If you like this project and want to support me, you can <b><a href="https://paypal.me/markusgubitz">DONATE TO THE PROJECT</a></b>
   </p>
 </p>
+
+## Demo
+[![Tech Demo](https://img.youtube.com/vi/39XW-fReY68/0.jpg)](https://youtu.be/39XW-fReY68 "AmongOBS Tech Demo")
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
