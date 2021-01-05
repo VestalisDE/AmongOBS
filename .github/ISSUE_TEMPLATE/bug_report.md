@@ -17,7 +17,7 @@ Please use this checklist to avoid spamming:
 5. [ ] I have used `Ctrl+R` on the CrewLink app when I can't hear some people (this is a known issue)
 6. [ ] I have checked that the CrewLink server I'm using is up to date
 7. [ ] I have a screenshot of any errors
-8. [ ] I have checked that someone else has not reported this using the [search bar](https://github.com/ottomated/CrewLink/issues?q=is%3Aissue)
+8. [ ] I have checked that someone else has not reported this using the [search bar](https://github.com/VestalisDE/AmongOBS/issues?q=is%3Aissue)
 
 **Describe the bug**
 <!-- A clear and concise description of what the bug is. -->
