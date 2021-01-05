@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="https://github.com/VestalisDE/AmongOBS">
+    <img src="logo.png" alt="Logo" width="80" height="80">
+  </a>
+
   <h3 align="center">AmongOBS</h3>
   <p align="center">
     Scene switcher for streamers, supporting <a href="https://obsproject.com/">OBS Studio</a> and <a href="https://streamlabs.com/streamlabs-obs">Streamlabs OBS</a>
