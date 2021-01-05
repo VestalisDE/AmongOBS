@@ -20,7 +20,7 @@ Currently running in early alpha state, quick draw as a proof of concept.
 
 ## Installation
 You need to install <a href="https://github.com/Palakis/obs-websocket/">OBS Websocket</a> in order to enable Websocket connections in OBS Studio 
-Version 0.0.1a is hardcoded link to OBS Studio.
+Version 0.0.2a is hardcoded link to OBS Studio.
 
 AmongOBS is hardcoded linked to `localhost:4444` and the scenes have to be named a special way according to the game states:
 Game Lobby: `AmongUs_Lobby`

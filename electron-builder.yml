@@ -12,4 +12,3 @@ files:
 win:
   publish:
     provider: github
-    token: 7e0ec70bb4e5d8d4984ac23c46985b326be46ca3
