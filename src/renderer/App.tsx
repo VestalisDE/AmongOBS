@@ -64,7 +64,7 @@ const TitleBar: React.FC<TitleBarProps> = function ({}: TitleBarProps) {
 				className={classes.button}
 				style={{ right: 0 }}
 				size="small"
-				onClick={() => ipcRenderer.send(IpcMessages.QUIT_CREWLINK)}
+				onClick={() => ipcRenderer.send(IpcMessages.QUIT_APPLICATION)}
 			>
 				<CloseIcon htmlColor="#777" />
 			</IconButton>
@@ -83,8 +83,6 @@ function App() {
 			setState(isOpen ? AppState.GAME : AppState.MENU);
 		};
 		const onOpenStream = (_: Electron.IpcRendererEvent, newState: StreamingState) => {
-			console.log('[App] onOpenStream');
-			console.log(newState);
 			setStreamingState(newState);
 		};
 		const onState = (_: Electron.IpcRendererEvent, newState: AmongUsState) => {
@@ -101,9 +99,7 @@ function App() {
 			.then(() => {
 				if (shouldInit) {
 					setGameState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE));
-					let newState = ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE_STREAM);
-					console.log(newState);
-					setStreamingState(newState);
+					setStreamingState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE_STREAM));
 				}
 			})
 			.catch((error: Error) => {
@@ -128,7 +124,6 @@ function App() {
 
 	let page;
 
-	console.log(streamingState);
 	if (state == AppState.GAME && streamingState !== null && streamingState.Connected) {
 		page = <Game error={error} />;
 	} else {

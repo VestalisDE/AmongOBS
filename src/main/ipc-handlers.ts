@@ -45,13 +45,13 @@ export const initializeIpcListeners = (): void => {
 		}
 	});
 
-	ipcMain.on(IpcMessages.RESTART_CREWLINK, () => {
-		console.log('restart crewlink');
+	ipcMain.on(IpcMessages.RESTART_APPLICATION, () => {
+		console.log('restart application');
 		app.relaunch();
 		app.quit();
 	});
 
-	ipcMain.on(IpcMessages.QUIT_CREWLINK, () => {
+	ipcMain.on(IpcMessages.QUIT_APPLICATION, () => {
 		for (const win of BrowserWindow.getAllWindows()) {
 			win.close();
 		}

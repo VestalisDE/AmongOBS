@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron';
 import GameReader from './GameReader';
 import StreamingControl from './StreamingControl';
-import { StreamingState } from '../common/StreamingState';
 import {
 	IpcHandlerMessages,
 	IpcRendererMessages,
@@ -11,7 +10,6 @@ import {
 let readingGame = false;
 let connected = false;
 let gameReader: GameReader;
-let streamingState: StreamingState;
 
 ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE, (event) => {
 	if (!readingGame) {
@@ -22,6 +20,13 @@ ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE, (event) => {
 		return;
 	}
 	event.returnValue = gameReader.lastState;
+});
+
+ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE_STREAM, (event) => {
+		event.returnValue = {
+			Software: 0,
+			Connected: false,
+		};
 });
 
 ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
@@ -45,23 +50,7 @@ ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
 		gameReader.amongUs = null;
 	}
 	if (!connected) {
-		console.log('trigger connection now...');
-		new StreamingControl('ws://localhost:4444', event.sender.send.bind(event.sender));
+		new StreamingControl('ws://localhost:4444', event.sender.send.bind(event.sender)); // @todo - get socketURL from settings
+		connected = true;
 	}
-});
-
-ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE_STREAM, (event) => {
-	console.log('IpcSyncMessages.GET_INITIAL_STATE_STREAM');
-	if (!connected) {
-		console.error(
-			'Recieved GET_INITIAL_STATE_STREAM message before the START_HOOK message was received'
-		);
-		//streamingState.Connected = false;
-	}
-	let streamingState = {
-		Software: 0,
-		Connected: false,
-	};
-	console.log(streamingState);
-	event.returnValue = streamingState;
 });

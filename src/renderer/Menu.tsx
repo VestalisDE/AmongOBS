@@ -92,7 +92,7 @@ const Menu: React.FC<MenuProps> = function ({ error, gameState, obsState }: Menu
 									<button
 										className={classes.button}
 										onClick={() => {
-											ipcRenderer.send(IpcMessages.RESTART_CREWLINK);
+											ipcRenderer.send(IpcMessages.RESTART_APPLICATION);
 										}}
 									>
 										Connect WS
