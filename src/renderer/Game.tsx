@@ -73,13 +73,13 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-const WebSocket = require('ws');
+//const WebSocket = require('ws');
 const SockJS = require('sockjs-client');
 
 const obsType = 1;
 let socket: WebSocket | typeof SockJS | boolean = false;
 
-/********** START OBS SOCKETS **********/
+/********** START OBS SOCKETS ********** /
 if (obsType == 1) {
 	const socketURL = 'ws://localhost:4444';
 	socket = new WebSocket(socketURL);
@@ -206,11 +206,11 @@ const Game: React.FC<GameProps> = function ({
 				}
 		}
 
-		let messageId = 999;
+		//let messageId = 999;
 		if (sceneId !== null && socket !== false) {
 			switch (obsType) {
 				case 1:
-					socket.send(JSON.stringify({ 'message-id': messageId, 'request-type': 'SetCurrentScene', 'scene-name': sceneId, }));
+					//socket.send(JSON.stringify({ 'message-id': messageId, 'request-type': 'SetCurrentScene', 'scene-name': sceneId, }));
 					break;/*
 				case 2:
 					socket.send(JSON.stringify({ id: messageId, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));

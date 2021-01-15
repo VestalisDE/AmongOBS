@@ -33,3 +33,7 @@ export enum GameState {
 	MENU,
 	UNKNOWN,
 }
+export enum AppState {
+	MENU,
+	GAME,
+}

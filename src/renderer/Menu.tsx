@@ -5,6 +5,8 @@ import { IpcMessages } from '../common/ipc-messages';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Typography from '@material-ui/core/Typography';
+import { AppState } from '../common/AmongUsState';
+import { StreamingState } from '../common/StreamingState';
 
 const useStyles = makeStyles((theme) => ({
 	root: {
@@ -36,7 +38,8 @@ const useStyles = makeStyles((theme) => ({
 		outline: 'none',
 		fontWeight: 500,
 		fontFamily: '"Varela", sans-serif',
-		marginTop: 24,
+		marginTop: 0,
+		marginBottom: 12,
 		'&:hover': {
 			borderColor: '#00ff00',
 			cursor: 'pointer',
@@ -46,9 +49,11 @@ const useStyles = makeStyles((theme) => ({
 
 export interface MenuProps {
 	error: string;
+	gameState: AppState;
+	obsState: StreamingState;
 }
 
-const Menu: React.FC<MenuProps> = function ({ error }: MenuProps) {
+const Menu: React.FC<MenuProps> = function ({ error, gameState, obsState }: MenuProps) {
 	const classes = useStyles();
 	return (
 		<div className={classes.root}>
@@ -63,17 +68,38 @@ const Menu: React.FC<MenuProps> = function ({ error }: MenuProps) {
 						</Typography>
 					</div>
 				) : (
-					<>
-						<span className={classes.waiting}>Waiting for Among Us</span>
-						<CircularProgress color="primary" size={40} />
-						<button
-							className={classes.button}
-							onClick={() => {
-								ipcRenderer.send(IpcMessages.OPEN_AMONG_US_GAME);
-							}}
-						>
-							Open Game
-						</button>
+						<>
+							{gameState == AppState.GAME ? (
+								<><span className={classes.waiting}>Among Us Connected</span></>
+							): (
+								<>
+									<span className={classes.waiting}>Waiting for Among Us</span>
+									<button
+										className={classes.button}
+										onClick={() => {
+											ipcRenderer.send(IpcMessages.OPEN_AMONG_US_GAME);
+										}}
+									>
+										Open Game
+									</button>
+								</>
+								)}
+							{obsState.Connected ? (
+								<><span className={classes.waiting}>OBS Connected</span></>
+							): (
+								<>
+									<span className={classes.waiting}>Waiting for OBS</span>
+									<button
+										className={classes.button}
+										onClick={() => {
+											ipcRenderer.send(IpcMessages.RESTART_CREWLINK);
+										}}
+									>
+										Connect WS
+									</button>
+								</>
+								)}
+							<CircularProgress color="primary" size={40} />
 					</>
 				)}
 				<Footer />

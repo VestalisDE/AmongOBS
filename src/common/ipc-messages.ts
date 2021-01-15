@@ -9,6 +9,7 @@ export enum IpcMessages {
 // Renderer --> Main (sendSync/on)
 export enum IpcSyncMessages {
 	GET_INITIAL_STATE = 'GET_INITIAL_STATE',
+	GET_INITIAL_STATE_STREAM = 'GET_INITIAL_STATE_STREAM',
 }
 
 // Renderer --> Main (invoke/handle)
@@ -25,4 +26,5 @@ export enum IpcRendererMessages {
 	PUSH_TO_TALK = 'PUSH_TO_TALK',
 	ERROR = 'ERROR',
 	AUTO_UPDATER_STATE = 'AUTO_UPDATER_STATE',
+	NOTIFY_STREAM_CONNECTION = 'NOTIFY_STREAM_CONNECTION',
 }

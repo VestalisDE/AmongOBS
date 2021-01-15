@@ -6,7 +6,8 @@ import ReactDOM from 'react-dom';
 import Game from './Game';
 import Menu from './Menu';
 import { ipcRenderer } from 'electron';
-import { AmongUsState } from '../common/AmongUsState';
+import { AmongUsState, AppState } from '../common/AmongUsState';
+import { StreamingState } from '../common/StreamingState';
 import { GameStateContext } from './contexts';
 import { ThemeProvider } from '@material-ui/core/styles';
 import {
@@ -71,25 +72,27 @@ const TitleBar: React.FC<TitleBarProps> = function ({}: TitleBarProps) {
 	);
 };
 
-enum AppState {
-	MENU,
-	GAME,
-}
-
 function App() {
 	const [state, setState] = useState<AppState>(AppState.MENU);
 	const [gameState, setGameState] = useState<AmongUsState>({} as AmongUsState);
+	const [streamingState, setStreamingState] = useState<StreamingState>({} as StreamingState);
 	const [error, setError] = useState('');
 
 	useEffect(() => {
 		const onOpen = (_: Electron.IpcRendererEvent, isOpen: boolean) => {
 			setState(isOpen ? AppState.GAME : AppState.MENU);
 		};
+		const onOpenStream = (_: Electron.IpcRendererEvent, newState: StreamingState) => {
+			console.log('[App] onOpenStream');
+			console.log(newState);
+			setStreamingState(newState);
+		};
 		const onState = (_: Electron.IpcRendererEvent, newState: AmongUsState) => {
 			setGameState(newState);
 		};
 		const onError = (_: Electron.IpcRendererEvent, error: string) => {
 			shouldInit = false;
+			console.log(error);
 			setError(error);
 		};
 		let shouldInit = true;
@@ -98,33 +101,38 @@ function App() {
 			.then(() => {
 				if (shouldInit) {
 					setGameState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE));
+					let newState = ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE_STREAM);
+					console.log(newState);
+					setStreamingState(newState);
 				}
 			})
 			.catch((error: Error) => {
 				if (shouldInit) {
 					shouldInit = false;
+					console.log(error);
 					setError(error.message);
 				}
 			});
 		ipcRenderer.on(IpcRendererMessages.NOTIFY_GAME_OPENED, onOpen);
 		ipcRenderer.on(IpcRendererMessages.NOTIFY_GAME_STATE_CHANGED, onState);
 		ipcRenderer.on(IpcRendererMessages.ERROR, onError);
+		ipcRenderer.on(IpcRendererMessages.NOTIFY_STREAM_CONNECTION, onOpenStream);
 		return () => {
 			ipcRenderer.off(IpcRendererMessages.NOTIFY_GAME_OPENED, onOpen);
 			ipcRenderer.off(IpcRendererMessages.NOTIFY_GAME_STATE_CHANGED, onState);
 			ipcRenderer.off(IpcRendererMessages.ERROR, onError);
+			ipcRenderer.off(IpcRendererMessages.NOTIFY_STREAM_CONNECTION, onOpenStream);
 			shouldInit = false;
 		};
 	}, []);
 
 	let page;
-	switch (state) {
-		case AppState.MENU:
-			page = <Menu error={error} />;
-			break;
-		case AppState.GAME:
-			page = <Game error={error} />;
-			break;
+
+	console.log(streamingState);
+	if (state == AppState.GAME && streamingState !== null && streamingState.Connected) {
+		page = <Game error={error} />;
+	} else {
+		page = <Menu error={error} gameState={state} obsState={streamingState} />;
 	}
 
 	return (

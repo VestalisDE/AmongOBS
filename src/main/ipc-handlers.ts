@@ -46,6 +46,7 @@ export const initializeIpcListeners = (): void => {
 	});
 
 	ipcMain.on(IpcMessages.RESTART_CREWLINK, () => {
+		console.log('restart crewlink');
 		app.relaunch();
 		app.quit();
 	});
