@@ -111,9 +111,8 @@ if (!gotTheLock) {
 
 	// create main BrowserWindow when electron is ready
 	app.whenReady().then(() => {
+		mainWindow = createMainWindow();
 		initializeIpcListeners();
 		initializeIpcHandlers();
-		mainWindow = createMainWindow();
 	});
-
 }

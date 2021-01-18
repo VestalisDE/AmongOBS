@@ -1,8 +1,14 @@
 export interface ISettings {
-	serverURL: string;
-	localLobbySettings: ILobbySettings;
+	software: string;
+	url: string;
+	token: string;
+	sceneSettings: ISceneSettings;
 }
 
-export interface ILobbySettings {
-	maxDistance: number;
+export interface ISceneSettings {
+	menu: string;
+	lobby: string;
+	tasks: string;
+	discussion: string;
+	unknown: string;
 }

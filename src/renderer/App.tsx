@@ -1,5 +1,11 @@
+import Store from 'electron-store';
 import React, {
+	Dispatch,
+	ErrorInfo,
+	ReactChild,
+	SetStateAction,
 	useEffect,
+	useReducer,
 	useState,
 } from 'react';
 import ReactDOM from 'react-dom';
@@ -7,8 +13,18 @@ import Game from './Game';
 import Menu from './Menu';
 import { ipcRenderer } from 'electron';
 import { AmongUsState, AppState } from '../common/AmongUsState';
+import Settings, {
+	settingsReducer,
+	sceneSettingsReducer,
+} from './settings/Settings';
+import { ISettings } from '../common/ISettings';
+import {
+	GameStateContext,
+	SettingsContext,
+	SceneSettingsContext,
+	storeConfig,
+} from './contexts';
 import { StreamingState } from '../common/StreamingState';
-import { GameStateContext } from './contexts';
 import { ThemeProvider } from '@material-ui/core/styles';
 import {
 	IpcHandlerMessages,
@@ -17,9 +33,16 @@ import {
 	IpcSyncMessages,
 } from '../common/ipc-messages';
 import theme from './theme';
+import SettingsIcon from '@material-ui/icons/Settings';
 import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
 import makeStyles from '@material-ui/core/styles/makeStyles';
+import Button from '@material-ui/core/Button';
+import './css/index.css';
+import Typography from '@material-ui/core/Typography';
+import SupportLink from './SupportLink';
+
+const store = new Store<ISettings>(storeConfig);
 
 let appVersion = '';
 if (typeof window !== 'undefined' && window.location) {
@@ -53,13 +76,27 @@ const useStyles = makeStyles(() => ({
 	},
 }));
 
-interface TitleBarProps {}
+interface TitleBarProps {
+	settingsOpen: boolean;
+	setSettingsOpen: Dispatch<SetStateAction<boolean>>;
+}
 
-const TitleBar: React.FC<TitleBarProps> = function ({}: TitleBarProps) {
+const TitleBar: React.FC<TitleBarProps> = function ({
+	settingsOpen,
+	setSettingsOpen,
+}: TitleBarProps) {
 	const classes = useStyles();
 	return (
 		<div className={classes.root}>
 			<span className={classes.title}>AmongOBS{appVersion}</span>
+			<IconButton
+				className={classes.button}
+				style={{ left: 0 }}
+				size="small"
+				onClick={() => setSettingsOpen(!settingsOpen)}
+			>
+				<SettingsIcon htmlColor="#777" />
+			</IconButton>
 			<IconButton
 				className={classes.button}
 				style={{ right: 0 }}
@@ -72,11 +109,88 @@ const TitleBar: React.FC<TitleBarProps> = function ({}: TitleBarProps) {
 	);
 };
 
-function App() {
+interface ErrorBoundaryProps {
+	children: ReactChild;
+}
+interface ErrorBoundaryState {
+	error?: Error;
+}
+
+class ErrorBoundary extends React.Component<
+	ErrorBoundaryProps,
+	ErrorBoundaryState
+> {
+	constructor(props: ErrorBoundaryProps) {
+		super(props);
+		this.state = {};
+	}
+
+	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+		// Update state so the next render will show the fallback UI.
+		return { error };
+	}
+
+	componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+		console.error('React Error: ', error, errorInfo);
+	}
+
+	render(): ReactChild {
+		if (this.state.error) {
+			return (
+				<div style={{ paddingTop: 16 }}>
+					<Typography align="center" variant="h6" color="error">
+						REACT ERROR
+					</Typography>
+					<Typography
+						align="center"
+						style={{
+							whiteSpace: 'pre-wrap',
+							fontSize: 12,
+							maxHeight: 200,
+							overflowY: 'auto',
+						}}
+					>
+						{this.state.error.stack}
+					</Typography>
+					<SupportLink />
+					<Button
+						style={{ margin: '10px auto', display: 'block' }}
+						variant="contained"
+						color="secondary"
+						onClick={() => window.location.reload()}
+					>
+						Reload App
+					</Button>
+				</div>
+			);
+		}
+
+		return this.props.children;
+	}
+}
+
+const App: React.FC = function () {
 	const [state, setState] = useState<AppState>(AppState.MENU);
 	const [gameState, setGameState] = useState<AmongUsState>({} as AmongUsState);
+	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [streamingState, setStreamingState] = useState<StreamingState>({} as StreamingState);
 	const [error, setError] = useState('');
+	const settings = useReducer(settingsReducer, {
+		software: 'Default',
+		url: 'Default',
+		token: 'Default',
+		sceneSettings: {
+			menu: 'Default',
+			lobby: 'Default',
+			tasks: 'Default',
+			discussion: 'Default',
+			unknown: 'Default',
+		},
+	});
+	const sceneSettings = useReducer(
+		sceneSettingsReducer,
+		settings[0].sceneSettings
+	);
 
 	useEffect(() => {
 		const onOpen = (_: Electron.IpcRendererEvent, isOpen: boolean) => {
@@ -90,12 +204,14 @@ function App() {
 		};
 		const onError = (_: Electron.IpcRendererEvent, error: string) => {
 			shouldInit = false;
+			console.log('Error:');
 			console.log(error);
 			setError(error);
 		};
 		let shouldInit = true;
+
 		ipcRenderer
-			.invoke(IpcHandlerMessages.START_HOOK)
+			.invoke(IpcHandlerMessages.START_HOOK, store.get('url'))
 			.then(() => {
 				if (shouldInit) {
 					setGameState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE));
@@ -105,6 +221,7 @@ function App() {
 			.catch((error: Error) => {
 				if (shouldInit) {
 					shouldInit = false;
+					console.log('Error:');
 					console.log(error);
 					setError(error.message);
 				}
@@ -132,12 +249,27 @@ function App() {
 
 	return (
 		<GameStateContext.Provider value={gameState}>
+			<SceneSettingsContext.Provider value={sceneSettings}>
+				<SettingsContext.Provider value={settings}>
 			<ThemeProvider theme={theme}>
-				<TitleBar />
-				{page}
+						<TitleBar
+							settingsOpen={settingsOpen}
+							setSettingsOpen={setSettingsOpen}
+						/>
+						<ErrorBoundary>
+							<>
+								<Settings
+									open={settingsOpen}
+									onClose={() => setSettingsOpen(false)}
+								/>
+								{page}
+							</>
+						</ErrorBoundary>
 			</ThemeProvider>
+				</SettingsContext.Provider>
+			</SceneSettingsContext.Provider>
 		</GameStateContext.Provider>
 	);
-}
+};
 
 ReactDOM.render(<App />, document.getElementById('app'));

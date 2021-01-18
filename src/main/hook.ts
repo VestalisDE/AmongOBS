@@ -29,7 +29,7 @@ ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE_STREAM, (event) => {
 		};
 });
 
-ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
+ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url : String) => {
 	if (!readingGame) {
 		readingGame = true;
 
@@ -50,7 +50,7 @@ ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
 		gameReader.amongUs = null;
 	}
 	if (!connected) {
-		new StreamingControl('ws://localhost:4444', event.sender.send.bind(event.sender)); // @todo - get socketURL from settings
+		new StreamingControl(url, event.sender.send.bind(event.sender));
 		connected = true;
 	}
 });
