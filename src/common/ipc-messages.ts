@@ -15,6 +15,7 @@ export enum IpcSyncMessages {
 // Renderer --> Main (invoke/handle)
 export enum IpcHandlerMessages {
 	START_HOOK = 'START_HOOK',
+	END_STREAM = 'END_STREAM',
 }
 
 // Main --> Renderer (send/on)

@@ -176,15 +176,15 @@ const App: React.FC = function () {
 	const [streamingState, setStreamingState] = useState<StreamingState>({} as StreamingState);
 	const [error, setError] = useState('');
 	const settings = useReducer(settingsReducer, {
-		software: 'Default',
-		url: 'Default',
-		token: 'Default',
+		software: '0',
+		url: 'ws://localhost:4444',
+		token: '',
 		sceneSettings: {
-			menu: 'Default',
-			lobby: 'Default',
-			tasks: 'Default',
-			discussion: 'Default',
-			unknown: 'Default',
+			menu: 'AmongUs_Menu',
+			lobby: 'AmongUs_Lobby',
+			tasks: 'AmongUs_Tasks',
+			discussion: 'AmongUs_Discussion',
+			unknown: 'AmongUs_Unknown',
 		},
 	});
 	const sceneSettings = useReducer(
@@ -197,6 +197,9 @@ const App: React.FC = function () {
 			setState(isOpen ? AppState.GAME : AppState.MENU);
 		};
 		const onOpenStream = (_: Electron.IpcRendererEvent, newState: StreamingState) => {
+			if (!newState.Connected) {
+				ipcRenderer.invoke(IpcHandlerMessages.END_STREAM).then(() => { }).catch((error: Error) => { });
+			}
 			setStreamingState(newState);
 		};
 		const onState = (_: Electron.IpcRendererEvent, newState: AmongUsState) => {

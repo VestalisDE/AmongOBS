@@ -46,31 +46,31 @@ export const storeConfig: Store.Options<ISettings> = {
 			properties: {
 				menu: {
 					type: 'string',
-					default: 'Default',
+					default: 'AmongUs_Menu',
 				},
 				lobby: {
 					type: 'string',
-					default: 'Default',
+					default: 'AmongUs_Lobby',
 				},
 				tasks: {
 					type: 'string',
-					default: 'Default',
+					default: 'AmongUs_Tasks',
 				},
 				discussion: {
 					type: 'string',
-					default: 'Default',
+					default: 'AmongUs_Discussion',
 				},
 				unknown: {
 					type: 'string',
-					default: 'Default',
+					default: 'AmongUs_Unknown',
 				},
 			},
 			default: {
-				menu: 'Default',
-				lobby: 'Default',
-				tasks: 'Default',
-				discussion: 'Default',
-				unknown: 'Default',
+				menu: 'AmongUs_Menu',
+				lobby: 'AmongUs_Lobby',
+				tasks: 'AmongUs_Tasks',
+				discussion: 'AmongUs_Discussion',
+				unknown: 'AmongUs_Unknown',
 			},
 		},
 	},

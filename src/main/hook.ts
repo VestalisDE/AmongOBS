@@ -29,7 +29,7 @@ ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE_STREAM, (event) => {
 		};
 });
 
-ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url : String) => {
+ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url: String) => {
 	if (!readingGame) {
 		readingGame = true;
 
@@ -53,4 +53,8 @@ ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url : String) => {
 		new StreamingControl(url, event.sender.send.bind(event.sender));
 		connected = true;
 	}
+});
+
+ipcMain.handle(IpcHandlerMessages.END_STREAM, async () => {
+	connected = false;
 });

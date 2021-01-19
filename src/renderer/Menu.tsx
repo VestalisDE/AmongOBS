@@ -1,12 +1,21 @@
 import React from 'react';
+import Store from 'electron-store';
 import { ipcRenderer } from 'electron';
 import Footer from './Footer';
-import { IpcMessages } from '../common/ipc-messages';
+import {
+	IpcHandlerMessages,
+	IpcMessages,
+	IpcRendererMessages,
+} from '../common/ipc-messages';
+import { ISettings } from '../common/ISettings';
+import { storeConfig } from './contexts';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Typography from '@material-ui/core/Typography';
 import { AppState } from '../common/AmongUsState';
-import { StreamingState } from '../common/StreamingState';
+import { StreamingState, StreamingSoftware } from '../common/StreamingState';
+
+const store = new Store<ISettings>(storeConfig);
 
 const useStyles = makeStyles((theme) => ({
 	root: {
@@ -84,22 +93,23 @@ const Menu: React.FC<MenuProps> = function ({ error, gameState, obsState }: Menu
 									</button>
 								</>
 								)}
+							<CircularProgress color="primary" size={40} />
 							{obsState.Connected ? (
-								<><span className={classes.waiting}>OBS Connected</span></>
+								<><span className={classes.waiting}>{parseInt(store.get('software')) == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} Connected</span></>
 							): (
-								<>
-									<span className={classes.waiting}>Waiting for OBS</span>
+									<>
+										<span className={classes.waiting}>{parseInt(store.get('software')) == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} DISCONNECTED</span>
 									<button
 										className={classes.button}
 										onClick={() => {
-											ipcRenderer.send(IpcMessages.RESTART_APPLICATION);
+
+											ipcRenderer.invoke(IpcHandlerMessages.START_HOOK, store.get('url')).catch((error: Error) => { ipcRenderer.invoke(IpcRendererMessages.ERROR, error); });
 										}}
 									>
 										Connect WS
 									</button>
 								</>
 								)}
-							<CircularProgress color="primary" size={40} />
 					</>
 				)}
 				<Footer />
