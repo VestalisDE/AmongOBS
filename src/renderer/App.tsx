@@ -203,9 +203,14 @@ const App: React.FC = function () {
 		const onUpdateStream = (_: Electron.IpcRendererEvent, newState: StreamingState) => {
 
 			console.log('[App.tsx] onUpdateStream() streamingState:');
-			console.log(streamingState); // {}
+			console.log(streamingState);
 			console.log('[App.tsx] onUpdateStream() newState:');
-			console.log(newState); // {Connected: false}, {Connected: true}
+			console.log(newState);
+			console.log('[App.tsx] onUpdateStream() setStreamingState(newState)');
+			setStreamingState(newState);
+			console.log('[App.tsx] onUpdateStream() streamingState:');
+			console.log(streamingState);
+
 			if ((typeof streamingState.Connected !== 'undefined' && streamingState.Connected !== newState.Connected) || newState.Connected) {
 				if (newState.Connected) {
 					console.log('[App.tsx] onUpdateStream() START_STREAM');
