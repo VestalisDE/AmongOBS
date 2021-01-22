@@ -11,7 +11,7 @@ import React, {
 import ReactDOM from 'react-dom';
 import Game from './Game';
 import Menu from './Menu';
-import { ipcRenderer } from 'electron';
+import { App, ipcRenderer } from 'electron';
 import { AmongUsState, AppState } from '../common/AmongUsState';
 import Settings, {
 	settingsReducer,
@@ -30,6 +30,7 @@ import {
 	IpcHandlerMessages,
 	IpcMessages,
 	IpcRendererMessages,
+	IpcStreamingMessages,
 	IpcSyncMessages,
 } from '../common/ipc-messages';
 import theme from './theme';
@@ -176,7 +177,7 @@ const App: React.FC = function () {
 	const [streamingState, setStreamingState] = useState<StreamingState>({} as StreamingState);
 	const [error, setError] = useState('');
 	const settings = useReducer(settingsReducer, {
-		software: '0',
+		software: 'OBS_STUDIO',
 		url: 'ws://localhost:4444',
 		token: '',
 		sceneSettings: {
@@ -193,18 +194,40 @@ const App: React.FC = function () {
 	);
 
 	useEffect(() => {
+		console.log('[App.tsx] useEffect()');
+
 		const onOpen = (_: Electron.IpcRendererEvent, isOpen: boolean) => {
 			setState(isOpen ? AppState.GAME : AppState.MENU);
 		};
-		const onOpenStream = (_: Electron.IpcRendererEvent, newState: StreamingState) => {
-			if (!newState.Connected) {
-				ipcRenderer.invoke(IpcHandlerMessages.END_STREAM).then(() => { }).catch((error: Error) => { });
+
+		const onUpdateStream = (_: Electron.IpcRendererEvent, newState: StreamingState) => {
+
+			console.log('[App.tsx] onUpdateStream() streamingState:');
+			console.log(streamingState); // {}
+			console.log('[App.tsx] onUpdateStream() newState:');
+			console.log(newState); // {Connected: false}, {Connected: true}
+			if ((typeof streamingState.Connected !== 'undefined' && streamingState.Connected !== newState.Connected) || newState.Connected) {
+				if (newState.Connected) {
+					console.log('[App.tsx] onUpdateStream() START_STREAM');
+					ipcRenderer.invoke(IpcStreamingMessages.START_STREAM).then(() => {
+						setStreamingState(newState);
+						console.log('setStreamingState(newState)');
+					}).catch((error: Error) => { });
+				} else {
+					console.log('[App.tsx] onUpdateStream() END_STREAM');
+					ipcRenderer.invoke(IpcStreamingMessages.END_STREAM).then(() => {
+						setStreamingState(newState);
+						console.log('setStreamingState(newState)');
+					}).catch((error: Error) => { });
+				}
 			}
-			setStreamingState(newState);
+			
 		};
+
 		const onState = (_: Electron.IpcRendererEvent, newState: AmongUsState) => {
 			setGameState(newState);
 		};
+
 		const onError = (_: Electron.IpcRendererEvent, error: string) => {
 			shouldInit = false;
 			console.log('Error:');
@@ -218,7 +241,10 @@ const App: React.FC = function () {
 			.then(() => {
 				if (shouldInit) {
 					setGameState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE));
-					setStreamingState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE_STREAM));
+					let stateX = ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE_STREAM);
+					console.log('setStreamingState(stateX)');
+					console.log(stateX);
+					setStreamingState(stateX);
 				}
 			})
 			.catch((error: Error) => {
@@ -232,12 +258,12 @@ const App: React.FC = function () {
 		ipcRenderer.on(IpcRendererMessages.NOTIFY_GAME_OPENED, onOpen);
 		ipcRenderer.on(IpcRendererMessages.NOTIFY_GAME_STATE_CHANGED, onState);
 		ipcRenderer.on(IpcRendererMessages.ERROR, onError);
-		ipcRenderer.on(IpcRendererMessages.NOTIFY_STREAM_CONNECTION, onOpenStream);
+		ipcRenderer.on(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, onUpdateStream);
 		return () => {
 			ipcRenderer.off(IpcRendererMessages.NOTIFY_GAME_OPENED, onOpen);
 			ipcRenderer.off(IpcRendererMessages.NOTIFY_GAME_STATE_CHANGED, onState);
 			ipcRenderer.off(IpcRendererMessages.ERROR, onError);
-			ipcRenderer.off(IpcRendererMessages.NOTIFY_STREAM_CONNECTION, onOpenStream);
+			ipcRenderer.off(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, onUpdateStream);
 			shouldInit = false;
 		};
 	}, []);

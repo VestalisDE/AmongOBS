@@ -95,10 +95,10 @@ const Menu: React.FC<MenuProps> = function ({ error, gameState, obsState }: Menu
 								)}
 							<CircularProgress color="primary" size={40} />
 							{obsState.Connected ? (
-								<><span className={classes.waiting}>{parseInt(store.get('software')) == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} Connected</span></>
+								<><span className={classes.waiting}>{store.get('software') == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} Connected</span></>
 							): (
 									<>
-										<span className={classes.waiting}>{parseInt(store.get('software')) == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} DISCONNECTED</span>
+										<span className={classes.waiting}>{store.get('software') == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} DISCONNECTED</span>
 									<button
 										className={classes.button}
 										onClick={() => {

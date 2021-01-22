@@ -31,7 +31,7 @@ export const storeConfig: Store.Options<ISettings> = {
 	schema: {
 		software: {
 			type: 'string',
-			default: '0',
+			default: 'OBS_STUDIO',
 		},
 		url: {
 			type: 'string',
