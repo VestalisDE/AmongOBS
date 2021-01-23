@@ -7,6 +7,7 @@ import {
 	IpcStreamingMessages,
 	IpcSyncMessages,
 } from '../common/ipc-messages';
+import { GameState } from '../common/AmongUsState';
 
 let readingGame = false;
 let connected = false;
@@ -26,19 +27,6 @@ ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE, (event) => {
 
 ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE_STREAM, (event) => {
 	event.returnValue = streamingControl.streamingState;
-});
-
-ipcMain.on(IpcStreamingMessages.STREAM_GET_SCENES, (event) => {
-
-	if (connected) {
-		console.log('STREAM_GET_SCENES');
-		streamingControl.getSceneList();
-	}
-
-	event.returnValue = {
-		Software: 0,
-		Connected: false,
-	};
 });
 
 ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url: String) => {
@@ -63,15 +51,20 @@ ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url: String) => {
 	}
 	if (!connected) {
 		streamingControl = new StreamingControl(url, event.sender.send.bind(event.sender));
+		connected = true;
 	}
 });
 
 ipcMain.handle(IpcStreamingMessages.START_STREAM, async () => {
-	console.log('[hook.ts] connected = TRUE');
 	connected = true;
 });
 
 ipcMain.handle(IpcStreamingMessages.END_STREAM, async () => {
-	console.log('[hook.ts] connected = false');
 	connected = false;
+});
+
+ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_SCENE, async (event, gameState: GameState) => {
+	if (gameReader && connected) {
+		streamingControl.changeScene(gameState);
+	}
 });

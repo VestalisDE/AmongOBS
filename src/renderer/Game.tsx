@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { ipcRenderer } from 'electron';
 import Avatar from './Avatar';
 import { GameStateContext } from './contexts';
 import { GameState, Player } from '../common/AmongUsState';
@@ -7,6 +8,9 @@ import Grid from '@material-ui/core/Grid';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import SupportLink from './SupportLink';
 import Divider from '@material-ui/core/Divider';
+import {
+	IpcStreamingMessages,
+} from '../common/ipc-messages';
 
 interface OtherDead {
 	[playerId: number]: boolean; // isTalking
@@ -79,37 +83,6 @@ const SockJS = require('sockjs-client');
 const obsType = 1;
 let socket: WebSocket | typeof SockJS | boolean = false;
 
-/********** START OBS SOCKETS ********** /
-if (obsType == 1) {
-	const socketURL = 'ws://localhost:4444';
-	socket = new WebSocket(socketURL);
-
-	socket.onopen = function (e: any) {
-		console.log("[open] OBS Connection established");
-		//	socket.send('{"request-type":"SetHeartbeat", "message-id":"1", "enable": false}');
-		//	socket.send('{"request-type":"GetSceneList", "message-id":"2"}');
-	};
-
-	socket.onmessage = function (event: any) {
-		console.log(`[message] Data received from server: ${event.data}`);
-	};
-
-	socket.onclose = function (event: any) {
-		if (event.wasClean) {
-			console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
-		} else {
-			// e.g. server process killed or network down
-			// event.code is usually 1006 in this case
-			console.log('[close] Connection died');
-		}
-	};
-
-	socket.onerror = function (error: any) {
-		console.log(`[error] ${error.message}`);
-	};
-}
-/********** END OBS SOCKETS **********/
-
 /********** START SLOBS SOCKETS ********** /
 if (obsType == 2) {
 	const socketURL = 'http://localhost:59650/api';
@@ -142,6 +115,9 @@ const Game: React.FC<GameProps> = function ({
 
 	// Set dead player data
 	useEffect(() => {
+
+		ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_SCENE, gameState.gameState).then(() => { }).catch((error: Error) => { });
+
 		let sceneId = null;
 		switch (gameState.gameState) {
 			case GameState.LOBBY:

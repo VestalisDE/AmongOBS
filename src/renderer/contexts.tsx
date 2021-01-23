@@ -41,6 +41,10 @@ export const storeConfig: Store.Options<ISettings> = {
 			type: 'string',
 			default: '',
 		},
+		scenes: {
+			type: 'array',
+			default: [],
+		},
 		sceneSettings: {
 			type: 'object',
 			properties: {

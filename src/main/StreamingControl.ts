@@ -3,6 +3,7 @@ import { ISettings } from '../common/ISettings';
 import { IpcStreamingMessages } from '../common/ipc-messages';
 import { StreamingState, StreamingSoftware, Scene } from '../common/StreamingState';
 import { storeConfig } from '../renderer/contexts';
+import { GameState } from '../common/AmongUsState';
 
 const store = new Store<ISettings>(storeConfig);
 
@@ -11,10 +12,11 @@ const Base64 = require("crypto-js/enc-base64");
 const WebSocket = require('ws');
 
 enum WebsocketMessages {
-	SetHeartbeat,
-	GetAuthRequired,
-	Authenticate,
-	GetSceneList,
+	SET_HEARTBEAT = 'SET_HEARTBEAT',
+	GET_AUTH_REQUIRED = 'GET_AUTH_REQUIRED',
+	AUTHENTICATE = 'AUTHENTICATE',
+	GET_SCENE_LIST = 'GET_SCENE_LIST',
+	CHANGE_SCENE = 'CHANGE_SCENE',
 }
 
 export default class StreamingControl extends WebSocket {
@@ -28,73 +30,67 @@ export default class StreamingControl extends WebSocket {
 		this.streamingState.Connected = false;
 		this.streamingState.Software = (<any>StreamingSoftware)[store.get('software')];
 		this.streamingState.Scenes = Array();
+		store.set('scenes', this.streamingState.Scenes);
 		this.sendIPC(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, this.streamingState);
 	}
 
 	onopen = function (this: StreamingControl, e: any) {
-		this.send(JSON.stringify({ 'message-id': String(WebsocketMessages.GetAuthRequired), 'request-type': 'GetAuthRequired' }));
+		this.send(JSON.stringify({ 'message-id': String(WebsocketMessages.GET_AUTH_REQUIRED), 'request-type': 'GetAuthRequired' }));
 	};
 
 	onmessage = function (this: StreamingControl, event: any) {
 
 		let data = JSON.parse(event.data);
-		switch (parseInt(data['message-id'])) {
-			case WebsocketMessages.GetAuthRequired:
+		switch (data['message-id']) {
+			case WebsocketMessages.GET_AUTH_REQUIRED:
 
 				if (data.authRequired) {
-					let password = store.get('token');
-
 					this.send(
 						JSON.stringify(
 							{
-								'message-id': String(WebsocketMessages.Authenticate),
+								'message-id': String(WebsocketMessages.AUTHENTICATE),
 								'request-type': 'Authenticate',
-								'auth': Base64.stringify(sha256(Base64.stringify(sha256(password + data.salt)) + data.challenge))
+								'auth': Base64.stringify(sha256(Base64.stringify(sha256(store.get('token') + data.salt)) + data.challenge))
 							}
 						)
 					);
 				} else {
 
 					this.streamingState.Connected = true;
-					console.log('[StreamingControl.ts] GetAuthRequired');
-					console.log(this.streamingState);
 					this.sendIPC(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, this.streamingState);
 					this.disableHeartbeat();
+					this.getSceneList();
 
 				}
 				/**/
 				break;
-			case WebsocketMessages.Authenticate:
+			case WebsocketMessages.AUTHENTICATE:
 				if (data.status === 'ok') {
 					this.streamingState.Connected = true;
-					console.log('[StreamingControl.ts] Authenticate true');
-					console.log(this.streamingState);
 					this.sendIPC(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, this.streamingState);
 					this.disableHeartbeat();
+					this.getSceneList();
 				} else {
 					this.streamingState.Connected = false;
-					console.log('[StreamingControl.ts] Authenticate false');
-					console.log(this.streamingState);
 					this.sendIPC(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, this.streamingState);
 				}
 				break;
-			case WebsocketMessages.SetHeartbeat:
+			case WebsocketMessages.SET_HEARTBEAT:
 				if (data.status !== 'ok') {
 					this.onerror(data);
 				}
 				break;
-			case WebsocketMessages.GetSceneList:
-				console.log('Received Answer GetSceneList');
+			case WebsocketMessages.GET_SCENE_LIST:
 				let scenes = Array();
 				data.scenes.forEach(function (value: any) {
 					let scene: Scene = { id: value.name, name: value.name };
 					scenes.push(scene);
 				});
 				this.streamingState.Scenes = scenes;
-				console.log('[StreamingControl.ts] GetSceneList');
-				console.log(this.streamingState);
+				store.set('scenes', scenes);
 				this.sendIPC(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, this.streamingState);
 				break;
+			case WebsocketMessages.CHANGE_SCENE:
 			default:
 				console.log('Unknown Message received');
 				console.log(`[StreamingControl: message] Data received from server: ${event.data}`);
@@ -111,16 +107,12 @@ export default class StreamingControl extends WebSocket {
 			console.log('[StreamingControl: close] Connection died');
 		}
 		this.streamingState.Connected = false;
-		console.log('[StreamingControl.ts] onclose');
-		console.log(this.streamingState);
 		this.sendIPC(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, this.streamingState);
 	};
 
 	onerror = function (this: StreamingControl, error: any) {
 		console.log(`[StreamingControl: error] ${error.message}`);
 		this.streamingState.Connected = false;
-		console.log('[StreamingControl.ts] onerror');
-		console.log(this.streamingState);
 		this.sendIPC(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, this.streamingState);
 	};
 
@@ -129,11 +121,37 @@ export default class StreamingControl extends WebSocket {
 	}
 
 	disableHeartbeat(): void {
-		this.send(JSON.stringify({ 'message-id': String(WebsocketMessages.SetHeartbeat), 'request-type': 'SetHeartbeat', 'enable': false }));
+		this.send(JSON.stringify({ 'message-id': String(WebsocketMessages.SET_HEARTBEAT), 'request-type': 'SetHeartbeat', 'enable': false }));
 	}
 
 	getSceneList(): void {
-		this.send(JSON.stringify({ 'message-id': String(WebsocketMessages.GetSceneList), 'request-type': 'GetSceneList' }));
+		this.send(JSON.stringify({ 'message-id': String(WebsocketMessages.GET_SCENE_LIST), 'request-type': 'GetSceneList' }));
+	}
+
+	changeScene(gameState: GameState): void {
+		const sceneSettings = store.get('sceneSettings');
+		let sceneId: string;
+
+		switch (gameState) {
+			case GameState.LOBBY:
+				sceneId = sceneSettings.lobby;
+				break;
+			case GameState.TASKS:
+				sceneId = sceneSettings.tasks;
+				break;
+			case GameState.DISCUSSION:
+				sceneId = sceneSettings.discussion;
+				break;
+			case GameState.MENU:
+				sceneId = sceneSettings.menu;
+				break;
+			case GameState.UNKNOWN:
+			default:
+				sceneId = sceneSettings.unknown;
+		}
+
+		this.send(JSON.stringify({ 'message-id': String(WebsocketMessages.CHANGE_SCENE), 'request-type': 'SetCurrentScene', 'scene-name': sceneId }));
+
 	}
 
 }

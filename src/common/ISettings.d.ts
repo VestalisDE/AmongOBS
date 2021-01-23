@@ -2,6 +2,7 @@ export interface ISettings {
 	software: string;
 	url: string;
 	token: string;
+	scenes: Array<object>;
 	sceneSettings: ISceneSettings;
 }
 

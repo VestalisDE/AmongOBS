@@ -14,7 +14,6 @@ import { ISettings, ISceneSettings } from '../../common/ISettings';
 import {
 	IpcHandlerMessages,
 	IpcRendererMessages,
-	//IpcStreamingMessages,
 } from '../../common/ipc-messages';
 import TextField from '@material-ui/core/TextField';
 import makeStyles from '@material-ui/core/styles/makeStyles';
@@ -36,6 +35,11 @@ import Button from '@material-ui/core/Button';
 
 interface StyleInput {
 	open: boolean;
+}
+
+interface Scene {
+	id: string;
+	name: string;
 }
 
 const Divider = withStyles((theme) => ({
@@ -270,12 +274,6 @@ const URLInput: React.FC<URLInputProps> = function ({
 	);
 };
 
-const reloadScenes = function () {
-
-	//ipcRenderer.sendSync(IpcStreamingMessages.STREAM_GET_SCENES);
-
-}
-
 const Settings: React.FC<SettingsProps> = function ({
 	open,
 	onClose,
@@ -286,7 +284,6 @@ const Settings: React.FC<SettingsProps> = function ({
 	const [unsavedCount, setUnsavedCount] = useState(0);
 	const unsaved = unsavedCount > 2;
 	useEffect(() => {
-		reloadScenes();
 		setSettings({
 			type: 'set',
 			action: store.store,
@@ -303,24 +300,8 @@ const Settings: React.FC<SettingsProps> = function ({
 		settings.url,
 	]);
 
-	/*
+	const scenes = store.get('scenes');
 
-				{(storeConfig.schema?.overlayPosition?.enum as string[]).map(
-						(position) => (
-							<option key={position} value={position}>
-								{position[0].toUpperCase()}
-								{position.substring(1)}
-							</option>
-						)
-					)}
-
-					onClick={updateDevices}
-					{microphones.map((d) => (
-						<option key={d.id} value={d.id}>
-							{d.label}
-						</option>
-					))}
-	 */
 	return (
 		<Box className={classes.root}>
 			<div className={classes.header}>
@@ -355,15 +336,126 @@ const Settings: React.FC<SettingsProps> = function ({
 					SelectProps={{ native: true }}
 					InputLabelProps={{ shrink: true }}
 					onChange={(ev) => {
+						sceneSettings.menu = ev.target.value;
 						setSettings({
 							type: 'setSceneSetting',
 							action: ['menu', ev.target.value],
 						});
 					}}
 				>
-					<option value="amongus_menu">amongus_menu</option>
-					<option value="game_menu">game_menu</option>
+					{(scenes as any).map(
+						(position: Scene) => (
+							<option key={position.id} value={position.id}>
+								{position.name}
+							</option>
+						)
+					)}
 				</TextField>
+				<TextField
+					select
+					fullWidth
+					label="Lobby"
+					variant="outlined"
+					color="secondary"
+					value={sceneSettings.lobby}
+					className={classes.shortcutField}
+					SelectProps={{ native: true }}
+					InputLabelProps={{ shrink: true }}
+					onChange={(ev) => {
+						sceneSettings.lobby = ev.target.value;
+						setSettings({
+							type: 'setSceneSetting',
+							action: ['lobby', ev.target.value],
+						});
+					}}
+				>
+					{(scenes as any).map(
+						(position: Scene) => (
+							<option key={position.id} value={position.id}>
+								{position.name}
+							</option>
+						)
+					)}
+				</TextField>
+				<TextField
+					select
+					fullWidth
+					label="Tasks"
+					variant="outlined"
+					color="secondary"
+					value={sceneSettings.tasks}
+					className={classes.shortcutField}
+					SelectProps={{ native: true }}
+					InputLabelProps={{ shrink: true }}
+					onChange={(ev) => {
+						sceneSettings.tasks = ev.target.value;
+						setSettings({
+							type: 'setSceneSetting',
+							action: ['tasks', ev.target.value],
+						});
+					}}
+				>
+					{(scenes as any).map(
+						(position: Scene) => (
+							<option key={position.id} value={position.id}>
+								{position.name}
+							</option>
+						)
+					)}
+				</TextField>
+				<TextField
+					select
+					fullWidth
+					label="Discussion"
+					variant="outlined"
+					color="secondary"
+					value={sceneSettings.discussion}
+					className={classes.shortcutField}
+					SelectProps={{ native: true }}
+					InputLabelProps={{ shrink: true }}
+					onChange={(ev) => {
+						sceneSettings.discussion = ev.target.value;
+						setSettings({
+							type: 'setSceneSetting',
+							action: ['discussion', ev.target.value],
+						});
+					}}
+				>
+					{(scenes as any).map(
+						(position: Scene) => (
+							<option key={position.id} value={position.id}>
+								{position.name}
+							</option>
+						)
+					)}
+				</TextField>
+				<TextField
+					select
+					fullWidth
+					label="Unknown"
+					variant="outlined"
+					color="secondary"
+					value={sceneSettings.unknown}
+					className={classes.shortcutField}
+					SelectProps={{ native: true }}
+					InputLabelProps={{ shrink: true }}
+					onChange={(ev) => {
+						sceneSettings.unknown = ev.target.value;
+						setSettings({
+							type: 'setSceneSetting',
+							action: ['unknown', ev.target.value],
+						});
+					}}
+				>
+					{(scenes as any).map(
+						(position: Scene) => (
+							<option key={position.id} value={position.id}>
+								{position.name}
+							</option>
+						)
+					)}
+				</TextField>
+
 				<Divider />
 				<URLInput
 					oldSoftware={settings.software}
