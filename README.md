@@ -14,9 +14,11 @@
   </p>
 </p>
 
-## Demo
+## DEMO
 [![Tech Demo](https://img.youtube.com/vi/39XW-fReY68/0.jpg)](https://youtu.be/39XW-fReY68 "AmongOBS Tech Demo")
+  (more demos coming soon, send me links to your VODs!)
 
+------------------------------------------------------------
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
@@ -26,19 +28,26 @@ You will be able to switch between scenes, based on game events such as beeing i
 Currently running in beta state, quick draw as a proof of concept.
 There is currently no UI but UI is not necessarily needed so this Beta version 
 
-## Installation
-Simply run the installer of AmongOBS and install the required plugin for OBS Studio.
+------------------------------------------------------------
+<!-- INSTALLATION -->
+## INSTALLATION
+- Install AmongOBS with the given installer
+- If you are using OBS Studio, install and setup <a href="https://github.com/Palakis/obs-websocket/">OBS Websocket</a>
+- Launch AmongOBS
+- Configure your OBS websocket connection in the settings (scroll to the bottom)
+  - **OBS Studio**
+    - Use `ws://localhost:4444` as Host & Port (replace `4444`  with the port you have defined in OBS Studio)
+    - Add the token, if you are using a password encrypted connection (recommended!)
+  - **Streamlabs OBS**
+    - Within Streamlabs open the settings for remote control and click on the blurred QR code to open it
+    - Click on "show details"
+    - Use `http://127.0.0.1:59650/api` as Host & Port (replace `59650` with the port you have defined in Streamlabs OBS)
+    - Copy your Streamlabs API token into AmongOBS
+- Configure the scenes you want to switch to, based on the game status.
+- Start the game and test it 😄 
+- Feature me on your live streams and connect to my Discord (optional 😉 )
 
-### OBS Studio
-You need to install <a href="https://github.com/Palakis/obs-websocket/">OBS Websocket</a> in order to enable Websocket connections in OBS Studio.
-
-### Streamlabs OBS
-Streamlabs OBS does not require any further plugins, as it supports websocket connections out of the box.
-
-## Setting up AmongOBS
-AmongOBS connects to OBS by default (`localhost:4444` without token). You can actually configure own an own connection (server, port, token) in the config.
-Also you can adjust the scenes to be switched in in the config, which *has to be done after the first launch*.
-
+------------------------------------------------------------
 ## License
 
 Distributed under the GNU General Public License v3.0. See `LICENSE` for more information.
