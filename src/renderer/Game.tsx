@@ -77,33 +77,6 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-//const WebSocket = require('ws');
-const SockJS = require('sockjs-client');
-
-const obsType = 1;
-let socket: WebSocket | typeof SockJS | boolean = false;
-
-/********** START SLOBS SOCKETS ********** /
-if (obsType == 2) {
-	const socketURL = 'http://localhost:59650/api';
-	const token = '28ed47a66b0e1558bca562fb3b768c91fcba342';
-	socket = new SockJS(socketURL);
-
-	socket.onopen = () => {
-		console.log("[open] SLOBS Connection established - requesting auth.");
-		socket.send(JSON.stringify({
-			jsonrpc: '2.0',
-			id: 1,
-			method: 'auth',
-			params: {
-				resource: 'TcpServerService',
-				args: [token],
-			},
-		}));
-	};
-}
-/********** END SLOBS SOCKETS **********/
-
 const Game: React.FC<GameProps> = function ({
 	error: initialError,
 }: GameProps) {
@@ -115,33 +88,12 @@ const Game: React.FC<GameProps> = function ({
 
 	// Set dead player data
 	useEffect(() => {
-
 		ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_SCENE, gameState.gameState).then(() => { }).catch((error: Error) => { });
-
-		let sceneId = null;
 		switch (gameState.gameState) {
 			case GameState.LOBBY:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Lobby';
-						break;
-					/*
-					case 2:
-						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;
-						*/
-				}
 				setOtherDead({});
 				break;
 			case GameState.TASKS:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Tasks';
-						break;/*
-					case 2:
-						sceneId = 'scene_5ad9a324-2aa7-48e8-a78e-1d0ae0bc16b2';
-						break;*/
-				}
 				if (!gameState.players) return;
 				setOtherDead((old) => {
 					for (const player of gameState.players) {
@@ -150,48 +102,6 @@ const Game: React.FC<GameProps> = function ({
 					return { ...old };
 				});
 				break;
-			case GameState.DISCUSSION:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Discussion';
-						break;/*
-					case 2:
-						sceneId = 'scene_5ad9a324-2aa7-48e8-a78e-1d0ae0bc16b2';
-						break;*/
-				}
-				break;
-			case GameState.MENU:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Lobby';
-						break;/*
-					case 2:
-						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;*/
-				}
-				break;
-			case GameState.UNKNOWN:
-			default:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Lobby';
-						break;/*
-					case 2:
-						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;*/
-				}
-		}
-
-		//let messageId = 999;
-		if (sceneId !== null && socket !== false) {
-			switch (obsType) {
-				case 1:
-					//socket.send(JSON.stringify({ 'message-id': messageId, 'request-type': 'SetCurrentScene', 'scene-name': sceneId, }));
-					break;/*
-				case 2:
-					socket.send(JSON.stringify({ id: messageId, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));
-					break;*/
-			}
 		}
 	}, [gameState.gameState]);
 

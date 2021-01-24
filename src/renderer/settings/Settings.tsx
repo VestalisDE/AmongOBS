@@ -207,12 +207,11 @@ const URLInput: React.FC<URLInputProps> = function ({
 							value="OBS_STUDIO"
 							control={<Radio />}
 						/>
-						{/* @todo Activate Streamlabs OBS
-							<FormControlLabel
+						<FormControlLabel
 							label="Streamlabs OBS"
 							value="STREAMLABS_OBS"
 							control={<Radio />}
-						/>*/}
+						/>
 					</RadioGroup>
 					<TextField
 						fullWidth
