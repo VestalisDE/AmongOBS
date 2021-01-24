@@ -53,7 +53,7 @@ function createMainWindow() {
 			`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}?version=DEV`
 		);
 	} else {
-		appVersion = '0.0.2a';
+		appVersion = '0.1';
 		window.loadURL(
 			formatUrl({
 				pathname: joinPath(__dirname, 'index.html'),

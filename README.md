@@ -23,21 +23,21 @@
 This projects connects Among Us with <a href="https://obsproject.com/">OBS Studio</a> and <a href="https://streamlabs.com/streamlabs-obs">Streamlabs OBS</a>.
 You will be able to switch between scenes, based on game events such as beeing in menu, lobby or discussion or doing tasks.
 
-Currently running in early alpha state, quick draw as a proof of concept.
+Currently running in beta state, quick draw as a proof of concept.
+There is currently no UI but UI is not necessarily needed so this Beta version 
 
 ## Installation
-You need to install <a href="https://github.com/Palakis/obs-websocket/">OBS Websocket</a> in order to enable Websocket connections in OBS Studio 
-The current version is hardcoded link to OBS Studio, connection to Streamlabs OBS is in development.
+Simply run the installer of AmongOBS and install the required plugin for OBS Studio.
 
-AmongOBS is connecting to `localhost:4444`, but the SocketURL and a token can be configured within the settings.
-The scenes have to be named a special way according to the game states, these can NOT be renamed at the current stage:
-Game Lobby: `AmongUs_Lobby`
-Game Tasks: `AmongUs_Tasks`
-Game Discussion: `AmongUs_Discussion`
-Game Menu: `AmongUs_Lobby`
-Game Unknown: `AmongUs_Lobby`
+### OBS Studio
+You need to install <a href="https://github.com/Palakis/obs-websocket/">OBS Websocket</a> in order to enable Websocket connections in OBS Studio.
 
-OBS has to be running *before* launching AmongOBS, otherwise reload it with `CTRL+R`
+### Streamlabs OBS
+Streamlabs OBS does not require any further plugins, as it supports websocket connections out of the box.
+
+## Setting up AmongOBS
+AmongOBS connects to OBS by default (`localhost:4444` without token). You can actually configure own an own connection (server, port, token) in the config.
+Also you can adjust the scenes to be switched in in the config, which *has to be done after the first launch*.
 
 ## License
 
