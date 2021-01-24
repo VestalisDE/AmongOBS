@@ -11,3 +11,7 @@ yarn-error.log
 *.user
 *.nsproj
 *.sln
+/nbproject/private/
+nbproject/
+*.njsproj
+*.env

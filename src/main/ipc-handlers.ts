@@ -45,12 +45,12 @@ export const initializeIpcListeners = (): void => {
 		}
 	});
 
-	ipcMain.on(IpcMessages.RESTART_CREWLINK, () => {
+	ipcMain.on(IpcMessages.RESTART_APPLICATION, () => {
 		app.relaunch();
 		app.quit();
 	});
 
-	ipcMain.on(IpcMessages.QUIT_CREWLINK, () => {
+	ipcMain.on(IpcMessages.QUIT_APPLICATION, () => {
 		for (const win of BrowserWindow.getAllWindows()) {
 			win.close();
 		}

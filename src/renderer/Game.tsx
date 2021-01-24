@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { ipcRenderer } from 'electron';
 import Avatar from './Avatar';
 import { GameStateContext } from './contexts';
 import { GameState, Player } from '../common/AmongUsState';
@@ -7,6 +8,9 @@ import Grid from '@material-ui/core/Grid';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import SupportLink from './SupportLink';
 import Divider from '@material-ui/core/Divider';
+import {
+	IpcStreamingMessages,
+} from '../common/ipc-messages';
 
 interface OtherDead {
 	[playerId: number]: boolean; // isTalking
@@ -73,64 +77,6 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-const WebSocket = require('ws');
-const SockJS = require('sockjs-client');
-
-const obsType = 1;
-let socket: WebSocket | typeof SockJS | boolean = false;
-
-/********** START OBS SOCKETS **********/
-if (obsType == 1) {
-	const socketURL = 'ws://localhost:4444';
-	socket = new WebSocket(socketURL);
-
-	socket.onopen = function (e: any) {
-		console.log("[open] OBS Connection established");
-		//	socket.send('{"request-type":"SetHeartbeat", "message-id":"1", "enable": false}');
-		//	socket.send('{"request-type":"GetSceneList", "message-id":"2"}');
-	};
-
-	socket.onmessage = function (event: any) {
-		console.log(`[message] Data received from server: ${event.data}`);
-	};
-
-	socket.onclose = function (event: any) {
-		if (event.wasClean) {
-			console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
-		} else {
-			// e.g. server process killed or network down
-			// event.code is usually 1006 in this case
-			console.log('[close] Connection died');
-		}
-	};
-
-	socket.onerror = function (error: any) {
-		console.log(`[error] ${error.message}`);
-	};
-}
-/********** END OBS SOCKETS **********/
-
-/********** START SLOBS SOCKETS ********** /
-if (obsType == 2) {
-	const socketURL = 'http://localhost:59650/api';
-	const token = '28ed47a66b0e1558bca562fb3b768c91fcba342';
-	socket = new SockJS(socketURL);
-
-	socket.onopen = () => {
-		console.log("[open] SLOBS Connection established - requesting auth.");
-		socket.send(JSON.stringify({
-			jsonrpc: '2.0',
-			id: 1,
-			method: 'auth',
-			params: {
-				resource: 'TcpServerService',
-				args: [token],
-			},
-		}));
-	};
-}
-/********** END SLOBS SOCKETS **********/
-
 const Game: React.FC<GameProps> = function ({
 	error: initialError,
 }: GameProps) {
@@ -142,30 +88,12 @@ const Game: React.FC<GameProps> = function ({
 
 	// Set dead player data
 	useEffect(() => {
-		let sceneId = null;
+		ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_SCENE, gameState.gameState).then(() => { }).catch((error: Error) => { });
 		switch (gameState.gameState) {
 			case GameState.LOBBY:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Lobby';
-						break;
-					/*
-					case 2:
-						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;
-						*/
-				}
 				setOtherDead({});
 				break;
 			case GameState.TASKS:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Tasks';
-						break;/*
-					case 2:
-						sceneId = 'scene_5ad9a324-2aa7-48e8-a78e-1d0ae0bc16b2';
-						break;*/
-				}
 				if (!gameState.players) return;
 				setOtherDead((old) => {
 					for (const player of gameState.players) {
@@ -174,48 +102,6 @@ const Game: React.FC<GameProps> = function ({
 					return { ...old };
 				});
 				break;
-			case GameState.DISCUSSION:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Discussion';
-						break;/*
-					case 2:
-						sceneId = 'scene_5ad9a324-2aa7-48e8-a78e-1d0ae0bc16b2';
-						break;*/
-				}
-				break;
-			case GameState.MENU:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Lobby';
-						break;/*
-					case 2:
-						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;*/
-				}
-				break;
-			case GameState.UNKNOWN:
-			default:
-				switch (obsType) {
-					case 1:
-						sceneId = 'AmongUs_Lobby';
-						break;/*
-					case 2:
-						sceneId = 'scene_9b3bc3d0-2401-48de-b20c-c0d15c726184';
-						break;*/
-				}
-		}
-
-		let messageId = 999;
-		if (sceneId !== null && socket !== false) {
-			switch (obsType) {
-				case 1:
-					socket.send(JSON.stringify({ 'message-id': messageId, 'request-type': 'SetCurrentScene', 'scene-name': sceneId, }));
-					break;/*
-				case 2:
-					socket.send(JSON.stringify({ id: messageId, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));
-					break;*/
-			}
 		}
 	}, [gameState.gameState]);
 

@@ -1,13 +1,18 @@
 import { ipcMain } from 'electron';
 import GameReader from './GameReader';
+import StreamingControl from './StreamingControl';
 import {
 	IpcHandlerMessages,
 	IpcRendererMessages,
+	IpcStreamingMessages,
 	IpcSyncMessages,
 } from '../common/ipc-messages';
+import { GameState } from '../common/AmongUsState';
 
 let readingGame = false;
+let connected = false;
 let gameReader: GameReader;
+let streamingControl: StreamingControl;
 
 ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE, (event) => {
 	if (!readingGame) {
@@ -20,7 +25,11 @@ ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE, (event) => {
 	event.returnValue = gameReader.lastState;
 });
 
-ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
+ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE_STREAM, (event) => {
+	event.returnValue = streamingControl.streamingState;
+});
+
+ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url: String) => {
 	if (!readingGame) {
 		readingGame = true;
 
@@ -39,5 +48,23 @@ ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
 		frame();
 	} else if (gameReader) {
 		gameReader.amongUs = null;
+	}
+	if (!connected) {
+		streamingControl = new StreamingControl(url, event.sender.send.bind(event.sender));
+		connected = true;
+	}
+});
+
+ipcMain.handle(IpcStreamingMessages.START_STREAM, async () => {
+	connected = true;
+});
+
+ipcMain.handle(IpcStreamingMessages.END_STREAM, async () => {
+	connected = false;
+});
+
+ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_SCENE, async (event, gameState: GameState) => {
+	if (gameReader && connected) {
+		streamingControl.changeScene(gameState);
 	}
 });
