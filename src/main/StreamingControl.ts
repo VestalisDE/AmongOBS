@@ -226,8 +226,54 @@ export default class StreamingControl {
 				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.CHANGE_SCENE, 'request-type': 'SetCurrentScene', 'scene-name': sceneId }));
 				break;
 			case StreamingSoftware.STREAMLABS_OBS:
-				console.log(JSON.stringify({ id: WebsocketMessages.CHANGE_SCENE, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));
 				this.ws.send(JSON.stringify({ id: WebsocketMessages.CHANGE_SCENE, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));
+				break;
+		}
+		
+	}
+
+	changePlayerInformation(type: string, value: string): void {
+
+		let sceneId = 'cam_name_10';
+		let sourceSettings = {};
+
+		switch (this.streamingState.Software) {
+			case StreamingSoftware.OBS_STUDIO:
+				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.CHANGE_SCENE, 'request-type': 'GetSourceSettings', 'scene-name': sceneId }));
+				// get all needed parameters for sourceSettings here!
+				switch (type) {
+					case 'name':
+						value = "Changed via WS again";
+						sourceSettings = { "color": 4278190080, "font": { "face": "Consolas", "flags": 0, "size": 256, "style": "Regular" }, "text": value };
+						// sourceSettings.text = value ;
+						break;
+					case 'color':
+						value = "C:/Users/markus/Pictures/Stream Overlays/AmongUs/cam_colors/yellow.png";
+						sourceSettings = { "file": value };
+						// sourceSettings.file = value ;
+						break;
+					case 'video':
+						value = "https://obs.ninja/?view=jYdAnud";
+						sourceSettings = { "height": 197, "reroute_audio": true, "url": value, "width": 350 };
+						// sourceSettings.url = value ;
+						break;
+				}
+
+				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.CHANGE_SCENE, 'request-type': 'SetSourceSettings', 'scene-name': sceneId, 'sourceSettings': sourceSettings }));
+				break;
+			case StreamingSoftware.STREAMLABS_OBS:
+				break;
+		}
+		
+	}
+
+	setPlayerDead(): void {
+
+		switch (this.streamingState.Software) {
+			case StreamingSoftware.OBS_STUDIO:
+				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.CHANGE_SCENE, 'request-type': 'SetSceneItemProperties', 'item': 'cam_offline_10', 'visible': true }));
+				break;
+			case StreamingSoftware.STREAMLABS_OBS:
 				break;
 		}
 		
