@@ -8,6 +8,7 @@ import {
 	IpcSyncMessages,
 } from '../common/ipc-messages';
 import { GameState } from '../common/AmongUsState';
+import { SourceEditTypes } from '../common/StreamingState';
 
 let readingGame = false;
 let connected = false;
@@ -66,5 +67,21 @@ ipcMain.handle(IpcStreamingMessages.END_STREAM, async () => {
 ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_SCENE, async (event, gameState: GameState) => {
 	if (gameReader && connected) {
 		streamingControl.changeScene(gameState);
+	}
+});
+
+ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, async (event, type: SourceEditTypes, playerNumber: number, value: any) => {
+	if (gameReader && connected) {
+		switch (type) {
+			case SourceEditTypes.NAME:
+			case SourceEditTypes.COLOR:
+			case SourceEditTypes.VIDEO:
+				streamingControl.changePlayerInformation(type, playerNumber, value);
+				break;
+			case SourceEditTypes.ISDEAD:
+			case SourceEditTypes.SHOW:
+				streamingControl.setSourceVisibility(type, playerNumber, value);
+				break;
+		}
 	}
 });

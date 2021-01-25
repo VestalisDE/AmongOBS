@@ -1,29 +1,24 @@
 import Store from 'electron-store';
 import { ISettings } from '../common/ISettings';
 import { IpcStreamingMessages } from '../common/ipc-messages';
-import { StreamingState, StreamingSoftware, Scene } from '../common/StreamingState';
+import { StreamingState, StreamingSoftware, Scene, SceneSource, SourceEditTypes, WebsocketMessages, WebsocketUpdates } from '../common/StreamingState';
 import { storeConfig } from '../renderer/contexts';
 import { GameState } from '../common/AmongUsState';
 
 const store = new Store<ISettings>(storeConfig);
-const sha256 = require("crypto-js/sha256");
-const Base64 = require("crypto-js/enc-base64");
+const sha256 = require('crypto-js/sha256');
+const Base64 = require('crypto-js/enc-base64');
 const WebSocket = require('ws');
 const SockJS = require('sockjs-client');
 
-enum WebsocketMessages {
-	SET_HEARTBEAT = 'SET_HEARTBEAT',
-	GET_AUTH_REQUIRED = 'GET_AUTH_REQUIRED',
-	AUTHENTICATE = 'AUTHENTICATE',
-	GET_SCENE_LIST = 'GET_SCENE_LIST',
-	CHANGE_SCENE = 'CHANGE_SCENE',
-}
+
 
 export default class StreamingControl {
 	sendIPC: Electron.WebContents['send'];
 	streamingState: StreamingState = {} as StreamingState;
 	streamingControl = this;
 	ws: WebSocket | typeof SockJS;
+	elementsToChange: Array<SceneSource> = [];
 
 	constructor(socketUrl: String, sendIPC: Electron.WebContents['send']) {
 		this.sendIPC = sendIPC;
@@ -46,7 +41,7 @@ export default class StreamingControl {
 		this.ws.onmessage = (event: any) => this.onmessage(event);
 		this.ws.onerror = (error: any) => this.onerror(error);
 
-	}	
+	}
 
 	onopen = function (this: StreamingControl, e: any) {
 		switch (this.streamingState.Software) {
@@ -118,9 +113,55 @@ export default class StreamingControl {
 							this.onerror(data);
 						}
 						break;
+					case WebsocketMessages.GET_SOURCE_SETTINGS:
+						if (data.status == 'ok') {
+
+							// As webservices are fully asynchronous we need to check here for elements which should be changed.
+							// If anyone has a better idea, please contribute to the code!
+							let elementsIdentified = this.elementsToChange.filter((e) => e.name == data.sourceName);
+							elementsIdentified.map((element) => {
+
+								let sourceSettings = data.sourceSettings;
+								Object.entries(element.sourceSettings).forEach(([key, value]) => {
+
+									if (element.modify) {
+										switch (element.type) {
+											case SourceEditTypes.COLOR:
+												value = sourceSettings[key].substr(0, sourceSettings[key].lastIndexOf('/') + 1) + value + sourceSettings[key].substr(sourceSettings[key].lastIndexOf('.'));
+												break;
+										}
+									}
+									sourceSettings[key] = value;
+
+								});
+								let request = JSON.stringify({ 'message-id': WebsocketMessages.SET_SOURCE_SETTINGS, 'request-type': 'SetSourceSettings', 'sourceName': data.sourceName, 'sourceSettings': sourceSettings });
+								this.ws.send(request);
+
+							});
+
+						} else {
+							this.onerror(data);
+						}
+						break;
+					case WebsocketMessages.SET_SOURCE_SETTINGS:
+						if (data.status !== 'ok') {
+							this.onerror(data);
+						}
+						break;
+					case WebsocketMessages.SET_SCENE_ITEM_PROPERTIES:
+						if (data.status !== 'ok') {
+							this.onerror(data);
+						}
+						break;
 					default:
-						console.log('Unknown Message received');
-						console.log(`[StreamingControl: message] Data received from server: ${event.data}`);
+						switch (data['update-type']) {
+							case WebsocketUpdates.SceneItemTransformChanged:
+							case WebsocketUpdates.SceneItemVisibilityChanged:
+								break;
+							default:
+								console.log('Unknown Message received');
+								console.log(`[StreamingControl: message] Data received from server: ${event.data}`);
+						}
 				}
 				break;
 			case StreamingSoftware.STREAMLABS_OBS:
@@ -158,7 +199,7 @@ export default class StreamingControl {
 				break;
 		}
 
-		
+
 
 	};
 
@@ -229,54 +270,62 @@ export default class StreamingControl {
 				this.ws.send(JSON.stringify({ id: WebsocketMessages.CHANGE_SCENE, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));
 				break;
 		}
-		
+
 	}
 
-	changePlayerInformation(type: string, value: string): void {
-
-		let sceneId = 'cam_name_10';
+	changePlayerInformation(type: SourceEditTypes, playerNumber: number, value: string): void {
+		let sourceId = 'cam_'; // @todo get the prefix from settings
 		let sourceSettings = {};
+		let modify = false;
 
 		switch (this.streamingState.Software) {
 			case StreamingSoftware.OBS_STUDIO:
-				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.CHANGE_SCENE, 'request-type': 'GetSourceSettings', 'scene-name': sceneId }));
-				// get all needed parameters for sourceSettings here!
+
 				switch (type) {
-					case 'name':
-						value = "Changed via WS again";
-						sourceSettings = { "color": 4278190080, "font": { "face": "Consolas", "flags": 0, "size": 256, "style": "Regular" }, "text": value };
-						// sourceSettings.text = value ;
+					case SourceEditTypes.NAME:
+						sourceId += 'name_' + playerNumber;
+						sourceSettings = { 'text': value };
 						break;
-					case 'color':
-						value = "C:/Users/markus/Pictures/Stream Overlays/AmongUs/cam_colors/yellow.png";
-						sourceSettings = { "file": value };
-						// sourceSettings.file = value ;
+					case SourceEditTypes.COLOR:
+						sourceId += 'color_' + playerNumber;
+						modify = true;
+						sourceSettings = { 'file': value };
 						break;
-					case 'video':
-						value = "https://obs.ninja/?view=jYdAnud";
-						sourceSettings = { "height": 197, "reroute_audio": true, "url": value, "width": 350 };
-						// sourceSettings.url = value ;
+					case SourceEditTypes.VIDEO:
+						sourceId += playerNumber;
+						sourceSettings = { 'url': value };
 						break;
 				}
 
-				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.CHANGE_SCENE, 'request-type': 'SetSourceSettings', 'scene-name': sceneId, 'sourceSettings': sourceSettings }));
+				this.elementsToChange.push({ name: sourceId, sourceSettings: sourceSettings, type: type, modify: modify });
+				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.GET_SOURCE_SETTINGS, 'request-type': 'GetSourceSettings', 'sourceName': sourceId }));
 				break;
 			case StreamingSoftware.STREAMLABS_OBS:
 				break;
 		}
-		
+
 	}
 
-	setPlayerDead(): void {
+	setSourceVisibility(type: SourceEditTypes, playerNumber: number, value: boolean): void {
 
+		let sceneId = ''; 
 		switch (this.streamingState.Software) {
 			case StreamingSoftware.OBS_STUDIO:
-				this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.CHANGE_SCENE, 'request-type': 'SetSceneItemProperties', 'item': 'cam_offline_10', 'visible': true }));
+				switch (type) {
+					case SourceEditTypes.ISDEAD:
+						sceneId = 'cam_offline_'+playerNumber; // @todo get the prefix from settings
+						this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'item': sceneId, 'visible': value }));
+						break;
+					case SourceEditTypes.SHOW:
+						sceneId = 'Webcam_'+playerNumber; // @todo get the prefix from settings
+						this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'item': sceneId, 'visible': value }));
+						break;
+				}
 				break;
 			case StreamingSoftware.STREAMLABS_OBS:
 				break;
 		}
-		
+
 	}
 
 }
