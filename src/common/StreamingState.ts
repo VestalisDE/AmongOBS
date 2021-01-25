@@ -93,3 +93,27 @@ export enum WebsocketUpdates {
 	PreviewSceneChanged = 'PreviewSceneChanged',
 	StudioModeSwitched = 'StudioModeSwitched',
 }
+
+export interface Streamers {
+	[playerId: number]: Streamer;
+}
+
+export interface Streamer {
+	ptr: number;
+	id: number;
+	name: string;
+	colorId: number;
+	//hatId: number;
+	//petId: number;
+	//skinId: number;
+	disconnected: boolean;
+	isImpostor: boolean;
+	isDead: boolean;
+	//taskPtr: number;
+	//objectPtr: number;
+	isLocal: boolean;
+	//x: number;
+	//y: number;
+	//inVent: boolean;
+	camlink: string;
+}

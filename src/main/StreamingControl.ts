@@ -11,8 +11,6 @@ const Base64 = require('crypto-js/enc-base64');
 const WebSocket = require('ws');
 const SockJS = require('sockjs-client');
 
-
-
 export default class StreamingControl {
 	sendIPC: Electron.WebContents['send'];
 	streamingState: StreamingState = {} as StreamingState;
@@ -155,6 +153,10 @@ export default class StreamingControl {
 						break;
 					default:
 						switch (data['update-type']) {
+							case WebsocketUpdates.SwitchScenes:
+							case WebsocketUpdates.TransitionBegin:
+							case WebsocketUpdates.TransitionEnd:
+							case WebsocketUpdates.TransitionVideoEnd:
 							case WebsocketUpdates.SceneItemTransformChanged:
 							case WebsocketUpdates.SceneItemVisibilityChanged:
 								break;
