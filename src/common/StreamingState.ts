@@ -94,13 +94,7 @@ export enum WebsocketUpdates {
 	StudioModeSwitched = 'StudioModeSwitched',
 }
 
-export interface Streamers {
-	[playerId: number]: Streamer;
-}
-
-export interface Streamer {
-	ptr: number;
-	id: number;
+export interface StreamPlayer {
 	name: string;
 	colorId: number;
 	//hatId: number;

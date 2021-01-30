@@ -275,6 +275,19 @@ export default class StreamingControl {
 
 	}
 
+	prepareStream(): void {
+
+		const sceneSettings = store.get('sceneSettings');
+		const scenesToChange = [sceneSettings.lobby, sceneSettings.discussion];
+
+		Object.entries(scenesToChange).forEach(([key, sceneId]) => {
+			for (let i = 2; i <= 10; i++) {
+				this.setSourceVisibility(SourceEditTypes.SHOW, i, false, sceneId);
+			}
+		});
+
+	}
+
 	changePlayerInformation(type: SourceEditTypes, playerNumber: number, value: string): void {
 		let sourceId = 'cam_'; // @todo get the prefix from settings
 		let sourceSettings = {};
@@ -308,20 +321,25 @@ export default class StreamingControl {
 
 	}
 
-	setSourceVisibility(type: SourceEditTypes, playerNumber: number, value: boolean): void {
+	setSourceVisibility(type: SourceEditTypes, playerNumber: number, value: boolean, sceneId = ''): void {
 
-		let sceneId = ''; 
+		let itemId = '';
 		switch (this.streamingState.Software) {
 			case StreamingSoftware.OBS_STUDIO:
 				switch (type) {
 					case SourceEditTypes.ISDEAD:
-						sceneId = 'cam_offline_'+playerNumber; // @todo get the prefix from settings
-						this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'item': sceneId, 'visible': value }));
+						itemId = 'cam_offline_' + playerNumber; // @todo get the prefix from settings
 						break;
 					case SourceEditTypes.SHOW:
-						sceneId = 'Webcam_'+playerNumber; // @todo get the prefix from settings
-						this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'item': sceneId, 'visible': value }));
+						itemId = 'Webcam_' + playerNumber; // @todo get the prefix from settings
 						break;
+				}
+				if (itemId != '') {
+					if (sceneId != '') {
+						this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'scene-name': sceneId, 'item': itemId, 'visible': value }));
+					} else {
+						this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'item': itemId, 'visible': value }));
+					}
 				}
 				break;
 			case StreamingSoftware.STREAMLABS_OBS:

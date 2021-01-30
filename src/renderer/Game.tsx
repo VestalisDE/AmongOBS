@@ -2,21 +2,17 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ipcRenderer } from 'electron';
 import Avatar from './Avatar';
 import { GameStateContext } from './contexts';
-import { GameState, Player } from '../common/AmongUsState';
+import { AmongUsState, GameState, Player } from '../common/AmongUsState';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import SupportLink from './SupportLink';
 import Divider from '@material-ui/core/Divider';
 import { IpcStreamingMessages, } from '../common/ipc-messages';
-import { Streamer } from '../common/StreamingState';
+import { StreamPlayer } from '../common/StreamingState';
 
 interface OtherDead {
 	[playerId: number]: boolean; // isTalking
-}
-
-interface currentStreamers {
-	[playerId: number]: Streamer;
 }
 
 export interface GameProps {
@@ -105,7 +101,9 @@ const Game: React.FC<GameProps> = function ({
 	let { lobbyCode: displayedLobbyCode } = gameState;
 	const [otherDead, setOtherDead] = useState<OtherDead>({});
 	const classes = useStyles();
-	const [currentStreamer, setCurrentStreamer] = useState<currentStreamers>({});
+	const [currentPlayers, setCurrentPlayers] = useState<Array<StreamPlayer>>();
+	const [playerHistory, setPlayerHistory] = useState<Array<StreamPlayer>>();
+	//const [previousGameState, setPreviousGameState] = useState<AmongUsState>();
 
 	// Set dead player data
 	useEffect(() => {
@@ -150,6 +148,7 @@ const Game: React.FC<GameProps> = function ({
 		return otherPlayers;
 	}, [gameState]);
 	*/
+
 	const allPlayers = useMemo(() => {
 		let allPlayers: Player[];
 		if (
@@ -164,21 +163,34 @@ const Game: React.FC<GameProps> = function ({
 		return allPlayers;
 	}, [gameState]);
 
-	const streamer = useMemo(() => {
+	useEffect(() => {
 
-		let streamer: Array<Streamer> = [];
+		let newPlayers: Array<StreamPlayer> = [];
+		let connectedCurrentPlayers: Array<StreamPlayer> = [];
+
+		/*
+		console.log('previousGameState');
+		console.log(previousGameState);
+		console.log('gameState');
+		console.log(gameState);
+		setPreviousGameState(gameState);
+		console.log('previousGameState');
+		console.log(previousGameState);
+		*/
+
+		/*
 		if (
 			!gameState ||
 			!gameState.players ||
 			gameState.lobbyCode === 'MENU' ||
 			!myPlayer
-		) return [];
+		) return;
+		*/
 
+		// All players who are in the same game now are added to newPlayers
 		Object.entries(gameState.players).forEach(([key, player]) => {
 			if (player.name != '') {
-				streamer.push({
-					ptr: player.ptr,
-					id: player.id,
+				newPlayers.push({
 					name: player.name,
 					disconnected: false,
 					colorId: player.colorId,
@@ -190,48 +202,116 @@ const Game: React.FC<GameProps> = function ({
 			}
 		});
 
-		if (JSON.stringify(currentStreamer) != JSON.stringify(streamer)) {
-			// something has changed at the players
+		// If there was no change, newPlayers and currentPlayers should be exactly the same
+		if (JSON.stringify(currentPlayers) != JSON.stringify(newPlayers)) {
 
-			// check if there are less connected players than before
-			let connectedStreamer = streamer.find((p) => !p.disconnected);
-			if(typeof connectedStreamer !== 'undefined' && Object.keys(connectedStreamer).length > streamer.length){
-				
-				Object.entries(currentStreamer).forEach(([key, player]) => {
-					if(!currentStreamer[parseInt(key)].disconnected){
-						// Search for the player who left, and set them disconnected
-						currentStreamer[parseInt(key)].disconnected = (typeof streamer.find((p) => p.name === player.name) === 'undefined');
-						if(currentStreamer[parseInt(key)].disconnected){
-							console.log('DISCONNECTED: ' + currentStreamer[parseInt(key)].name);
-						}
+			// If currentPlayers was not set before, we can simply skip the validations and just set it to newPlayers
+			if (typeof currentPlayers !== 'undefined') {
+
+				connectedCurrentPlayers = currentPlayers.filter((p: StreamPlayer) => !p.disconnected);
+
+				/** /
+				console.log('currentPlayers:');
+				console.log(currentPlayers);
+				console.log('newPlayers:');
+				console.log(newPlayers);
+				console.log('connectedCurrentPlayers:');
+				console.log(connectedCurrentPlayers);
+				/**/
+
+				if (typeof connectedCurrentPlayers !== 'undefined') {
+
+					// check if there are less players than before
+					if (connectedCurrentPlayers.length > newPlayers.length) {
+						Object.entries(currentPlayers).forEach(([key, player]) => {
+							if (!currentPlayers[parseInt(key)].disconnected) {
+								// Search for the player who left, and set them disconnected
+								currentPlayers[parseInt(key)].disconnected = (typeof newPlayers.find((p) => p.name === player.name) === 'undefined');
+								if (currentPlayers[parseInt(key)].disconnected) {
+									console.log('DISCONNECTED: ' + currentPlayers[parseInt(key)].name);
+								}
+							}
+						});
 					}
+
+					// check if someone new connected
+					if (connectedCurrentPlayers.length < newPlayers.length) {
+						Object.entries(newPlayers).forEach(([key, player]) => {
+							if (typeof currentPlayers.find((p) => p.name === player.name) === 'undefined') {
+
+								if (typeof playerHistory === 'undefined') {
+									setPlayerHistory([newPlayers[parseInt(key)]]);
+								} else {
+									if (typeof playerHistory.find((p) => p.name === player.name) === 'undefined') {
+										console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
+										playerHistory.push(newPlayers[parseInt(key)]);
+										setPlayerHistory(playerHistory);
+									} else {
+										console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
+									}
+								}
+
+							}
+						});
+					}
+
+				} else {
+
+					// All players are disconnected, which shouldn't be possible as the host is still connected.
+					console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+					console.log('+++ All players are disconnected, which shouldnt be possible as the host is still connected. +++');
+					console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+
+				}
+
+				/*/ check if any details have changed
+				Object.entries(currentPlayers).forEach(([key, player]) => {
+					
+					let p = newPlayers.find((p) => p.name === player.name);
+					if(typeof p === 'undefined'){
+						// player is not connected anymore
+						currentPlayers[parseInt(key)].disconnected = true;
+					} else {
+
+						if(currentPlayers[parseInt(key)].colorId != p.colorId){
+							console.log('COLOR CHANGE: ' + currentPlayers[parseInt(key)].name);
+						}
+
+						// update their credentials
+						currentPlayers[parseInt(key)] = p;
+					}
+
+
+						// Search for the player who left, and set them disconnected
+						
+						if(currentPlayers[parseInt(key)].disconnected){
+							console.log('DISCONNECTED: ' + currentPlayers[parseInt(key)].name);
+						}
 				});
 
+				console.log(newPlayers.length);
+				Object.entries(currentPlayers).forEach(([key, player]) => {
+					
+					console.log('<Game.tsx> this one:');
+					console.log(player);
+
+					console.log('<Game.tsx> found them:');
+					console.log(newPlayers.find((p) => p.name === player.name));
+					
+					if (JSON.stringify(player) != JSON.stringify(newPlayers[parseInt(key)])) {
+						console.log('<Game.tsx> this one');
+						console.log(player);
+						console.log(newPlayers[parseInt(key)]);
+					}
+				});
+				/**/
 			}
 
-
-
-			console.log(streamer.length);
-			Object.entries(currentStreamer).forEach(([key, player]) => {
-				
-				console.log('<Game.tsx> this one:');
-				console.log(player);
-
-				console.log('<Game.tsx> found them:');
-				console.log(streamer.find((p) => p.name === player.name));
-				
-				if (JSON.stringify(player) != JSON.stringify(streamer[parseInt(key)])) {
-					console.log('<Game.tsx> this one');
-					console.log(player);
-					console.log(streamer[parseInt(key)]);
-				}
-			});
-			
-			console.log(streamer);
-			setCurrentStreamer(streamer);
+			// Set the newPlayers as currentPlayers for next iteration
+			setCurrentPlayers(newPlayers);
 		}
 
-		return streamer;
+		return;
 	}, [gameState]);
 
 	return (

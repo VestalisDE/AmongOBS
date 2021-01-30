@@ -58,6 +58,7 @@ ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url: String) => {
 
 ipcMain.handle(IpcStreamingMessages.START_STREAM, async () => {
 	connected = true;
+	streamingControl.prepareStream();
 });
 
 ipcMain.handle(IpcStreamingMessages.END_STREAM, async () => {
@@ -70,7 +71,7 @@ ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_SCENE, async (event, gameState
 	}
 });
 
-ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, async (event, type: SourceEditTypes, playerNumber: number, value: any) => {
+ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, async (event, type: SourceEditTypes, playerNumber: number, value: any, sceneId = '') => {
 	if (gameReader && connected) {
 		switch (type) {
 			case SourceEditTypes.NAME:
@@ -80,7 +81,7 @@ ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, async (even
 				break;
 			case SourceEditTypes.ISDEAD:
 			case SourceEditTypes.SHOW:
-				streamingControl.setSourceVisibility(type, playerNumber, value);
+				streamingControl.setSourceVisibility(type, playerNumber, value, sceneId);
 				break;
 		}
 	}
