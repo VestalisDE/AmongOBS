@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ipcRenderer } from 'electron';
 import Avatar from './Avatar';
 import { GameStateContext } from './contexts';
-import { AmongUsState, GameState, Player } from '../common/AmongUsState';
+import { GameState, Player } from '../common/AmongUsState';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import makeStyles from '@material-ui/core/styles/makeStyles';
@@ -103,16 +103,26 @@ const Game: React.FC<GameProps> = function ({
 	const classes = useStyles();
 	const [currentPlayers, setCurrentPlayers] = useState<Array<StreamPlayer>>();
 	const [playerHistory, setPlayerHistory] = useState<Array<StreamPlayer>>();
-	//const [previousGameState, setPreviousGameState] = useState<AmongUsState>();
+	const [startTasks, setStartTasks] = useState(0);
+
+	let showeveryone = true;
+	let showCamForSeconds = 5;
 
 	// Set dead player data
 	useEffect(() => {
+
+		if(typeof myPlayer !== 'undefined'){console.log('The streamer is ' + myPlayer.name);}
+
 		ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_SCENE, gameState.gameState).then(() => { }).catch((error: Error) => { });
 		switch (gameState.gameState) {
 			case GameState.LOBBY:
+				console.log('State changed to LOBBY');
 				setOtherDead({});
 				break;
 			case GameState.TASKS:
+				let startTasks = new Date().getTime();
+				setStartTasks(startTasks);
+				console.log('State changed to TASKS ' + startTasks);
 				if (!gameState.players) return;
 				setOtherDead((old) => {
 					for (const player of gameState.players) {
@@ -121,7 +131,17 @@ const Game: React.FC<GameProps> = function ({
 					return { ...old };
 				});
 				break;
+			case GameState.DISCUSSION:
+				console.log('State changed to DISCUSSION');
+				break;
+			case GameState.MENU:
+				console.log('State changed to MENU');
+				break;
+			case GameState.UNKNOWN:
+				console.log('State changed to UNKNOWN');
+				break;
 		}
+
 	}, [gameState.gameState]);
 
 	const myPlayer = useMemo(() => {
@@ -131,23 +151,6 @@ const Game: React.FC<GameProps> = function ({
 			return gameState.players.find((p) => p.isLocal);
 		}
 	}, [gameState.players]);
-
-	/*
-	const otherPlayers = useMemo(() => {
-
-		let otherPlayers: Player[];
-		if (
-			!gameState ||
-			!gameState.players ||
-			gameState.lobbyCode === 'MENU' ||
-			!myPlayer
-		)
-			return [];
-		else otherPlayers = gameState.players.filter((p) => !p.isLocal);
-
-		return otherPlayers;
-	}, [gameState]);
-	*/
 
 	const allPlayers = useMemo(() => {
 		let allPlayers: Player[];
@@ -163,29 +166,20 @@ const Game: React.FC<GameProps> = function ({
 		return allPlayers;
 	}, [gameState]);
 
+	/**
+	 * HERE IS THE NEW THING FOR HAVING ALL THE CAMERAS.
+	 * 
+	 * THEORY:
+	 * - When in LOBBY: Add a camera box for every player
+	 * - When in TASKS: Do check for a killcam.
+	 * - When in DISCUSSION: 
+	 * 
+	 * @todo Make this whole thing adjustable by parameters and a config file for video sources
+	 */
 	useEffect(() => {
 
 		let newPlayers: Array<StreamPlayer> = [];
 		let connectedCurrentPlayers: Array<StreamPlayer> = [];
-
-		/*
-		console.log('previousGameState');
-		console.log(previousGameState);
-		console.log('gameState');
-		console.log(gameState);
-		setPreviousGameState(gameState);
-		console.log('previousGameState');
-		console.log(previousGameState);
-		*/
-
-		/*
-		if (
-			!gameState ||
-			!gameState.players ||
-			gameState.lobbyCode === 'MENU' ||
-			!myPlayer
-		) return;
-		*/
 
 		// All players who are in the same game now are added to newPlayers
 		Object.entries(gameState.players).forEach(([key, player]) => {
@@ -205,21 +199,21 @@ const Game: React.FC<GameProps> = function ({
 		// If there was no change, newPlayers and currentPlayers should be exactly the same
 		if (JSON.stringify(currentPlayers) != JSON.stringify(newPlayers)) {
 
-			// If currentPlayers was not set before, we can simply skip the validations and just set it to newPlayers
+			// If currentPlayers was set before, we need some validations befor setting it to newPlayers
 			if (typeof currentPlayers !== 'undefined') {
 
+				// Get all players from currentPlayers, who are still connected
 				connectedCurrentPlayers = currentPlayers.filter((p: StreamPlayer) => !p.disconnected);
 
-				/** /
-				console.log('currentPlayers:');
-				console.log(currentPlayers);
-				console.log('newPlayers:');
-				console.log(newPlayers);
-				console.log('connectedCurrentPlayers:');
-				console.log(connectedCurrentPlayers);
-				/**/
 
-				if (typeof connectedCurrentPlayers !== 'undefined') {
+				if (typeof connectedCurrentPlayers === 'undefined') {
+
+					// All players are disconnected, which shouldn't be possible as the host is still connected.
+					console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+					console.log('+++ All players are disconnected, which shouldnt be possible as the host is still connected. +++');
+					console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+
+				} else {
 
 					// check if there are less players than before
 					if (connectedCurrentPlayers.length > newPlayers.length) {
@@ -228,7 +222,11 @@ const Game: React.FC<GameProps> = function ({
 								// Search for the player who left, and set them disconnected
 								currentPlayers[parseInt(key)].disconnected = (typeof newPlayers.find((p) => p.name === player.name) === 'undefined');
 								if (currentPlayers[parseInt(key)].disconnected) {
+
+									// This one was disconnected.
+									// @todo Should we hide their camera now?
 									console.log('DISCONNECTED: ' + currentPlayers[parseInt(key)].name);
+
 								}
 							}
 						});
@@ -237,74 +235,110 @@ const Game: React.FC<GameProps> = function ({
 					// check if someone new connected
 					if (connectedCurrentPlayers.length < newPlayers.length) {
 						Object.entries(newPlayers).forEach(([key, player]) => {
+							// Only look for players, who arent registered yet.
 							if (typeof currentPlayers.find((p) => p.name === player.name) === 'undefined') {
 
-								if (typeof playerHistory === 'undefined') {
-									setPlayerHistory([newPlayers[parseInt(key)]]);
+								let pH = (typeof playerHistory !== 'undefined') ? playerHistory : [];
+								if (typeof pH.find((p) => p.name === player.name) === 'undefined') {
+
+									// This one has connected for the first time.
+									// @todo Should we show their camera now?
+									console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
+									pH.push(newPlayers[parseInt(key)]);
+									setPlayerHistory(pH);
+
 								} else {
-									if (typeof playerHistory.find((p) => p.name === player.name) === 'undefined') {
-										console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
-										playerHistory.push(newPlayers[parseInt(key)]);
-										setPlayerHistory(playerHistory);
-									} else {
-										console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
-									}
+									
+									// This one has reconnected.
+									// @todo Should we hide their camera now?
+									console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
+
 								}
 
 							}
 						});
 					}
 
-				} else {
+					// check if any attribute has changed
+					Object.entries(newPlayers).forEach(([key, player]) => {
+						let p = connectedCurrentPlayers.find((p) => p.name === player.name);
+						if(typeof p !== 'undefined'){
+							
+							// check if someone died while being at least 10s in Tasks, so we do not react to ejects. Also we check if the streamer is either dead or impostor
+							if(newPlayers[parseInt(key)].isDead != p.isDead && (new Date().getTime() - startTasks) > 10000 && typeof myPlayer !== 'undefined' && (myPlayer.isImpostor || myPlayer.isDead)){
+								
+								// This one is the victim, fetch the object with coordinates for them
+								let victim = allPlayers.find((victim) => victim.name === newPlayers[parseInt(key)].name);
+								if(typeof victim !== 'undefined' && typeof myPlayer !== 'undefined'){
 
-					// All players are disconnected, which shouldn't be possible as the host is still connected.
-					console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-					console.log('+++ All players are disconnected, which shouldnt be possible as the host is still connected. +++');
-					console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+									let myDistance = Math.sqrt(Math.pow(myPlayer.x-victim?.x,2) + Math.pow(myPlayer.y-victim.y,2));
+									if(myDistance < 3){
+
+										// The streamer was nearby, we are going to show the cams of impostors and ghosts/players nearby but exclude the streamer
+										Object.entries(allPlayers).forEach(([k2, p3]) => {
+											if(typeof victim !== 'undefined' && p3.name !== myPlayer.name && (showeveryone || (p3.isImpostor || p3.isDead))){
+												// Get the distance between player and victim
+												let distance = Math.sqrt(Math.pow(p3.x-victim?.x,2) + Math.pow(p3.y-victim.y,2))
+												if(distance < 1){
+
+													// @todo Show the cams...
+													console.log(p3.name + ' should show their cam now');
+
+													// Use activeCams to deactivate the interval after the first launch.
+													let activeCams = Array();
+													activeCams[p3.id] = setInterval((player: Player) => {
+														// @todo Hide the cam again...
+														console.log(player.name + ' should hide their cam now');
+														clearInterval(activeCams[player.id]);
+													}, showCamForSeconds*1000, p3);
+
+												}
+											}
+										});
+
+									}
+									
+								}
+
+							}
+
+							// check if the color has changed
+							if(newPlayers[parseInt(key)].colorId != p.colorId){
+								
+								// This one has changed their color.
+								// @todo We should change the overlays color
+								console.log('COLOR CHANGE: ' + newPlayers[parseInt(key)].name);
+
+							}
+						}
+					});
+
+					// @todo Can we know if anyone changed their name?
+					// @todo Show all cameras for those, who are already connected in the lobby.
+					// @todo Hide all cameras for those, who were not connected when starting the game.
 
 				}
+			} else {
 
-				/*/ check if any details have changed
-				Object.entries(currentPlayers).forEach(([key, player]) => {
-					
-					let p = newPlayers.find((p) => p.name === player.name);
-					if(typeof p === 'undefined'){
-						// player is not connected anymore
-						currentPlayers[parseInt(key)].disconnected = true;
+				Object.entries(newPlayers).forEach(([key, player]) => {
+					let pH = (typeof playerHistory !== 'undefined') ? playerHistory : [];
+					if (typeof pH.find((p) => p.name === player.name) === 'undefined') {
+
+						// This one has connected for the first time.
+						// @todo Should we show their camera now?
+						console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
+						pH.push(newPlayers[parseInt(key)]);
+						setPlayerHistory(pH);
+
 					} else {
-
-						if(currentPlayers[parseInt(key)].colorId != p.colorId){
-							console.log('COLOR CHANGE: ' + currentPlayers[parseInt(key)].name);
-						}
-
-						// update their credentials
-						currentPlayers[parseInt(key)] = p;
-					}
-
-
-						// Search for the player who left, and set them disconnected
 						
-						if(currentPlayers[parseInt(key)].disconnected){
-							console.log('DISCONNECTED: ' + currentPlayers[parseInt(key)].name);
-						}
-				});
+						// This one has reconnected.
+						// @todo Should we hide their camera now?
+						console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
 
-				console.log(newPlayers.length);
-				Object.entries(currentPlayers).forEach(([key, player]) => {
-					
-					console.log('<Game.tsx> this one:');
-					console.log(player);
-
-					console.log('<Game.tsx> found them:');
-					console.log(newPlayers.find((p) => p.name === player.name));
-					
-					if (JSON.stringify(player) != JSON.stringify(newPlayers[parseInt(key)])) {
-						console.log('<Game.tsx> this one');
-						console.log(player);
-						console.log(newPlayers[parseInt(key)]);
 					}
 				});
-				/**/
+
 			}
 
 			// Set the newPlayers as currentPlayers for next iteration
