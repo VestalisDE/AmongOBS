@@ -9,7 +9,7 @@ import makeStyles from '@material-ui/core/styles/makeStyles';
 import SupportLink from './SupportLink';
 import Divider from '@material-ui/core/Divider';
 import { IpcStreamingMessages, } from '../common/ipc-messages';
-import { StreamPlayer } from '../common/StreamingState';
+import { StreamPlayer, playerColors } from '../common/StreamingState';
 
 interface OtherDead {
 	[playerId: number]: boolean; // isTalking
@@ -103,15 +103,35 @@ const Game: React.FC<GameProps> = function ({
 	const classes = useStyles();
 	const [currentPlayers, setCurrentPlayers] = useState<Array<StreamPlayer>>();
 	const [playerHistory, setPlayerHistory] = useState<Array<StreamPlayer>>();
-	const [playerCameras, setPlayerCameras] = useState<Array<StreamPlayer>>();
+	const [playerCameras, setPCS] = useState<Array<StreamPlayer>>();
 	const [startTasks, setStartTasks] = useState(0);
 
 	let showeveryone = true;
 	let showCamForSeconds = 5;
 
+	function setPlayerCameras(playerCameras: Array<StreamPlayer>){
+		console.log(playerCameras);
+		setPCS(playerCameras);
+
+		Object.entries(playerCameras).forEach(([key, player]) => {
+			let index = parseInt(key)+1;
+
+			console.log('SHOW ' + index);
+			console.log('SET COLOR ' + index + ' = ' + playerColors[player.colorId]);
+			console.log('SET NAME ' + index + ' = ' + player.name);
+			console.log('SET VIDEO ' + index + ' = ' + 'https://obs.ninja/?view=KMYmcYf');
+
+			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'SHOW', index, true).then(() => { }).catch((error: Error) => { });
+			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'COLOR', index, playerColors[player.colorId]).then(() => { }).catch((error: Error) => { });
+			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'NAME', index, player.name).then(() => { }).catch((error: Error) => { });
+			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'VIDEO', index, 'https://obs.ninja/?view=KMYmcYf').then(() => { }).catch((error: Error) => { });
+		});
+	}
+
 	// Set dead player data
 	useEffect(() => {
 
+		// @debug
 		if(typeof myPlayer !== 'undefined'){console.log('The streamer is ' + myPlayer.name);}
 
 		ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_SCENE, gameState.gameState).then(() => { }).catch((error: Error) => { });
@@ -131,6 +151,7 @@ const Game: React.FC<GameProps> = function ({
 						let p = allPlayers.find((p) => p.name === player.name);
 						if (typeof p === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name){
 							
+							// @debug @todo hide the camera
 							console.log(player.name + ' HIDE CAMERA');
 							pC = pC.filter(obj => obj !== player);
 
@@ -152,6 +173,7 @@ const Game: React.FC<GameProps> = function ({
 				if (typeof playerCameras !== 'undefined') {
 					Object.entries(playerCameras).forEach(([key, player]) => {
 						if(typeof myPlayer !== 'undefined' && player.name !== myPlayer.name){
+							// @debug @todo hide the camera
 							console.log(player.name + ' HIDE CAMERA');
 						}
 					});
@@ -187,12 +209,12 @@ const Game: React.FC<GameProps> = function ({
 	/**
 	 * HERE IS THE NEW THING FOR HAVING ALL THE CAMERAS.
 	 * 
-	 * THEORY:
-	 * - When in LOBBY: Add a camera box for every player
-	 * - When in TASKS: Do check for a killcam.
-	 * - When in DISCUSSION: 
+	 * When in LOBBY: Add a camera box for every player.
+	 * When entering the game: Remove all cameras for players who left.
+	 * When in TASKS: Enable the killcam.
 	 * 
 	 * @todo Make this whole thing adjustable by parameters and a config file for video sources
+	 * @todo Can we know if anyone changed their name?
 	 */
 	useEffect(() => {
 
@@ -239,12 +261,6 @@ const Game: React.FC<GameProps> = function ({
 							if (!currentPlayers[parseInt(key)].disconnected) {
 								// Search for the player who left, and set them disconnected
 								currentPlayers[parseInt(key)].disconnected = (typeof newPlayers.find((p) => p.name === player.name) === 'undefined');
-								/*
-								if (currentPlayers[parseInt(key)].disconnected) {
-									// This one was disconnected.
-									console.log('DISCONNECTED: ' + currentPlayers[parseInt(key)].name);
-								}
-								/**/
 							}
 						});
 					}
@@ -257,18 +273,10 @@ const Game: React.FC<GameProps> = function ({
 
 								let pH = (typeof playerHistory !== 'undefined') ? playerHistory : [];
 								if (typeof pH.find((p) => p.name === player.name) === 'undefined') {
-
+									
 									// This one has connected for the first time.
-									// @todo Should we show their camera now?
-									//console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
 									pH.push(newPlayers[parseInt(key)]);
 									setPlayerHistory(pH);
-
-								} else {
-									
-									// This one has reconnected.
-									// @todo Should we hide their camera now?
-									// console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
 
 								}
 								let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
@@ -276,6 +284,7 @@ const Game: React.FC<GameProps> = function ({
 
 									pC.push(newPlayers[parseInt(key)]);
 									setPlayerCameras(pC);
+									// @debug @todo show the camera
 									console.log(player.name + ' SHOW CAMERA');
 
 								}
@@ -306,13 +315,13 @@ const Game: React.FC<GameProps> = function ({
 												let distance = Math.sqrt(Math.pow(p3.x-victim?.x,2) + Math.pow(p3.y-victim.y,2))
 												if(distance < 1){
 
-													// @todo Show the cams...
+													// @debug @todo show the camera
 													console.log(p3.name + ' SHOW CAMERA (KILL)');
 
 													// Use activeCams to deactivate the interval after the first launch.
 													let activeCams = Array();
 													activeCams[p3.id] = setInterval((player: Player) => {
-														// @todo Hide the cam again...
+														// @debug @todo hide the camera
 														console.log(player.name + ' HIDE CAMERA (KILL)');
 														clearInterval(activeCams[player.id]);
 													}, showCamForSeconds*1000, p3);
@@ -331,16 +340,12 @@ const Game: React.FC<GameProps> = function ({
 							if(newPlayers[parseInt(key)].colorId != p.colorId){
 								
 								// This one has changed their color.
-								// @todo We should change the overlays color
+								// @debug @todo We should change the overlays color
 								console.log(newPlayers[parseInt(key)].name + ' COLOR CHANGE');
 
 							}
 						}
 					});
-
-					// @todo Can we know if anyone changed their name?
-					// @todo Show all cameras for those, who are already connected in the lobby.
-					// @todo Hide all cameras for those, who were not connected when starting the game.
 
 				}
 			} else {
@@ -350,16 +355,8 @@ const Game: React.FC<GameProps> = function ({
 					if (typeof pH.find((p) => p.name === player.name) === 'undefined') {
 
 						// This one has connected for the first time.
-						// @todo Should we show their camera now?
-						// console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
 						pH.push(newPlayers[parseInt(key)]);
 						setPlayerHistory(pH);
-
-					} else {
-						
-						// This one has reconnected.
-						// @todo Should we hide their camera now?
-						//console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
 
 					}
 					let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
@@ -367,6 +364,7 @@ const Game: React.FC<GameProps> = function ({
 
 						pC.push(newPlayers[parseInt(key)]);
 						setPlayerCameras(pC);
+						// @debug @todo show the camera
 						console.log(player.name + ' SHOW CAMERA');
 
 					}

@@ -111,3 +111,18 @@ export interface StreamPlayer {
 	//inVent: boolean;
 	camlink: string;
 }
+
+export const playerColors = [
+	'red',
+	'blue',
+	'green',
+	'pink',
+	'orange',
+	'yellow',
+	'black',
+	'white',
+	'purple',
+	'brown',
+	'cyan',
+	'lime',
+]
