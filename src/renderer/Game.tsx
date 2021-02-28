@@ -103,6 +103,7 @@ const Game: React.FC<GameProps> = function ({
 	const classes = useStyles();
 	const [currentPlayers, setCurrentPlayers] = useState<Array<StreamPlayer>>();
 	const [playerHistory, setPlayerHistory] = useState<Array<StreamPlayer>>();
+	const [playerCameras, setPlayerCameras] = useState<Array<StreamPlayer>>();
 	const [startTasks, setStartTasks] = useState(0);
 
 	let showeveryone = true;
@@ -116,13 +117,28 @@ const Game: React.FC<GameProps> = function ({
 		ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_SCENE, gameState.gameState).then(() => { }).catch((error: Error) => { });
 		switch (gameState.gameState) {
 			case GameState.LOBBY:
-				console.log('State changed to LOBBY');
 				setOtherDead({});
 				break;
 			case GameState.TASKS:
+
+				// Save the time, when entering tasks, to distinguish between kills and ejects
 				let startTasks = new Date().getTime();
 				setStartTasks(startTasks);
-				console.log('State changed to TASKS ' + startTasks);
+
+				if (typeof playerCameras !== 'undefined') {
+					let pC = playerCameras;
+					Object.entries(playerCameras).forEach(([key, player]) => {
+						let p = allPlayers.find((p) => p.name === player.name);
+						if (typeof p === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name){
+							
+							console.log(player.name + ' HIDE CAMERA');
+							pC = pC.filter(obj => obj !== player);
+
+						}
+					});
+					setPlayerCameras(pC);
+				}
+
 				if (!gameState.players) return;
 				setOtherDead((old) => {
 					for (const player of gameState.players) {
@@ -131,14 +147,16 @@ const Game: React.FC<GameProps> = function ({
 					return { ...old };
 				});
 				break;
-			case GameState.DISCUSSION:
-				console.log('State changed to DISCUSSION');
-				break;
 			case GameState.MENU:
-				console.log('State changed to MENU');
-				break;
 			case GameState.UNKNOWN:
-				console.log('State changed to UNKNOWN');
+				if (typeof playerCameras !== 'undefined') {
+					Object.entries(playerCameras).forEach(([key, player]) => {
+						if(typeof myPlayer !== 'undefined' && player.name !== myPlayer.name){
+							console.log(player.name + ' HIDE CAMERA');
+						}
+					});
+				}
+				setPlayerCameras([]);
 				break;
 		}
 
@@ -182,7 +200,7 @@ const Game: React.FC<GameProps> = function ({
 		let connectedCurrentPlayers: Array<StreamPlayer> = [];
 
 		// All players who are in the same game now are added to newPlayers
-		Object.entries(gameState.players).forEach(([key, player]) => {
+		Object.entries(allPlayers).forEach(([key, player]) => {
 			if (player.name != '') {
 				newPlayers.push({
 					name: player.name,
@@ -221,13 +239,12 @@ const Game: React.FC<GameProps> = function ({
 							if (!currentPlayers[parseInt(key)].disconnected) {
 								// Search for the player who left, and set them disconnected
 								currentPlayers[parseInt(key)].disconnected = (typeof newPlayers.find((p) => p.name === player.name) === 'undefined');
+								/*
 								if (currentPlayers[parseInt(key)].disconnected) {
-
 									// This one was disconnected.
-									// @todo Should we hide their camera now?
 									console.log('DISCONNECTED: ' + currentPlayers[parseInt(key)].name);
-
 								}
+								/**/
 							}
 						});
 					}
@@ -243,7 +260,7 @@ const Game: React.FC<GameProps> = function ({
 
 									// This one has connected for the first time.
 									// @todo Should we show their camera now?
-									console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
+									//console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
 									pH.push(newPlayers[parseInt(key)]);
 									setPlayerHistory(pH);
 
@@ -251,7 +268,15 @@ const Game: React.FC<GameProps> = function ({
 									
 									// This one has reconnected.
 									// @todo Should we hide their camera now?
-									console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
+									// console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
+
+								}
+								let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
+								if (typeof pC.find((p) => p.name === player.name) === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name) {
+
+									pC.push(newPlayers[parseInt(key)]);
+									setPlayerCameras(pC);
+									console.log(player.name + ' SHOW CAMERA');
 
 								}
 
@@ -282,13 +307,13 @@ const Game: React.FC<GameProps> = function ({
 												if(distance < 1){
 
 													// @todo Show the cams...
-													console.log(p3.name + ' should show their cam now');
+													console.log(p3.name + ' SHOW CAMERA (KILL)');
 
 													// Use activeCams to deactivate the interval after the first launch.
 													let activeCams = Array();
 													activeCams[p3.id] = setInterval((player: Player) => {
 														// @todo Hide the cam again...
-														console.log(player.name + ' should hide their cam now');
+														console.log(player.name + ' HIDE CAMERA (KILL)');
 														clearInterval(activeCams[player.id]);
 													}, showCamForSeconds*1000, p3);
 
@@ -307,7 +332,7 @@ const Game: React.FC<GameProps> = function ({
 								
 								// This one has changed their color.
 								// @todo We should change the overlays color
-								console.log('COLOR CHANGE: ' + newPlayers[parseInt(key)].name);
+								console.log(newPlayers[parseInt(key)].name + ' COLOR CHANGE');
 
 							}
 						}
@@ -326,7 +351,7 @@ const Game: React.FC<GameProps> = function ({
 
 						// This one has connected for the first time.
 						// @todo Should we show their camera now?
-						console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
+						// console.log('CONNECTED: ' + newPlayers[parseInt(key)].name);
 						pH.push(newPlayers[parseInt(key)]);
 						setPlayerHistory(pH);
 
@@ -334,7 +359,15 @@ const Game: React.FC<GameProps> = function ({
 						
 						// This one has reconnected.
 						// @todo Should we hide their camera now?
-						console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
+						//console.log('RECONNECTED: ' + newPlayers[parseInt(key)].name);
+
+					}
+					let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
+					if (typeof pC.find((p) => p.name === player.name) === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name) {
+
+						pC.push(newPlayers[parseInt(key)]);
+						setPlayerCameras(pC);
+						console.log(player.name + ' SHOW CAMERA');
 
 					}
 				});
