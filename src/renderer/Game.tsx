@@ -110,22 +110,32 @@ const Game: React.FC<GameProps> = function ({
 	let showCamForSeconds = 5;
 
 	function setPlayerCameras(playerCameras: Array<StreamPlayer>){
-		console.log(playerCameras);
-		setPCS(playerCameras);
+		
+		let index = 1;
+		if(typeof myPlayer !== 'undefined'){
+			ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'COLOR', index, playerColors[myPlayer.colorId]).then(() => { }).catch((error: Error) => { });
+			ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'ISDEAD', index, gameState.gameState != GameState.LOBBY ? myPlayer.isDead : false).then(() => { }).catch((error: Error) => { });
+			ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'NAME', index, myPlayer.name).then(() => { }).catch((error: Error) => { });			
+		}
 
 		Object.entries(playerCameras).forEach(([key, player]) => {
-			let index = parseInt(key)+1;
-
-			console.log('SHOW ' + index);
-			console.log('SET COLOR ' + index + ' = ' + playerColors[player.colorId]);
-			console.log('SET NAME ' + index + ' = ' + player.name);
-			console.log('SET VIDEO ' + index + ' = ' + 'https://obs.ninja/?view=KMYmcYf');
-
-			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'SHOW', index, true).then(() => { }).catch((error: Error) => { });
-			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'COLOR', index, playerColors[player.colorId]).then(() => { }).catch((error: Error) => { });
-			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'NAME', index, player.name).then(() => { }).catch((error: Error) => { });
-			//ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'VIDEO', index, 'https://obs.ninja/?view=KMYmcYf').then(() => { }).catch((error: Error) => { });
+			index = parseInt(key)+2;
+			if(index <= 10){
+				ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'SHOW', index, true).then(() => { }).catch((error: Error) => { });
+				ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'ISDEAD', index, player.isDead).then(() => { }).catch((error: Error) => { });
+				ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'COLOR', index, playerColors[player.colorId]).then(() => { }).catch((error: Error) => { });
+				ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'NAME', index, player.name).then(() => { }).catch((error: Error) => { });
+				ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'VIDEO', index, 'https://obs.ninja/?view=KMYmcYf').then(() => { }).catch((error: Error) => { });
+			}
 		});
+		index++;
+
+		// Hide all the other cameras
+		for(true; index <= 10; index++){
+			ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'SHOW', index, false).then(() => { }).catch((error: Error) => { });
+		}
+		setPCS(playerCameras);
+
 	}
 
 	// Set dead player data
@@ -138,6 +148,12 @@ const Game: React.FC<GameProps> = function ({
 		switch (gameState.gameState) {
 			case GameState.LOBBY:
 				setOtherDead({});
+				let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
+				pC = pC.map( item => {
+					item.isDead = false;
+					return item;
+				});
+				setPlayerCameras(pC);
 				break;
 			case GameState.TASKS:
 
@@ -168,16 +184,20 @@ const Game: React.FC<GameProps> = function ({
 					return { ...old };
 				});
 				break;
+			case GameState.DISCUSSION:
+				if (typeof allPlayers !== 'undefined') {
+					let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
+					Object.entries(allPlayers).forEach(([key, player]) => {
+						pC = pC.map( item => {
+							item.isDead = item.name == player.name ? player.isDead : item.isDead;
+							return item;
+						 });
+					});
+					setPlayerCameras(pC);
+				}
+				break;
 			case GameState.MENU:
 			case GameState.UNKNOWN:
-				if (typeof playerCameras !== 'undefined') {
-					Object.entries(playerCameras).forEach(([key, player]) => {
-						if(typeof myPlayer !== 'undefined' && player.name !== myPlayer.name){
-							// @debug @todo hide the camera
-							console.log(player.name + ' HIDE CAMERA');
-						}
-					});
-				}
 				setPlayerCameras([]);
 				break;
 		}
@@ -202,6 +222,26 @@ const Game: React.FC<GameProps> = function ({
 		)
 			return [];
 		else allPlayers = gameState.players;
+
+		let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
+		if (pC.length < allPlayers.length) {
+			Object.entries(allPlayers).forEach(([key, player]) => {
+				if (typeof pC.find((p) => p.name === player.name) === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name && player.name != '') {
+
+					pC.push({
+						name: player.name,
+						disconnected: false,
+						colorId: player.colorId,
+						isDead: player.isDead,
+						isLocal: player.isLocal,
+						isImpostor: player.isImpostor,
+						camlink: '',
+					});
+					setPlayerCameras(pC);
+
+				}
+			});
+		}
 
 		return allPlayers;
 	}, [gameState]);
@@ -272,7 +312,7 @@ const Game: React.FC<GameProps> = function ({
 							if (typeof currentPlayers.find((p) => p.name === player.name) === 'undefined') {
 
 								let pH = (typeof playerHistory !== 'undefined') ? playerHistory : [];
-								if (typeof pH.find((p) => p.name === player.name) === 'undefined') {
+								if (typeof pH.find((p) => p.name === player.name) === 'undefined' && player.name != '') {
 									
 									// This one has connected for the first time.
 									pH.push(newPlayers[parseInt(key)]);
@@ -280,7 +320,7 @@ const Game: React.FC<GameProps> = function ({
 
 								}
 								let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
-								if (typeof pC.find((p) => p.name === player.name) === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name) {
+								if (typeof pC.find((p) => p.name === player.name) === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name && player.name != '') {
 
 									pC.push(newPlayers[parseInt(key)]);
 									setPlayerCameras(pC);
@@ -338,11 +378,14 @@ const Game: React.FC<GameProps> = function ({
 
 							// check if the color has changed
 							if(newPlayers[parseInt(key)].colorId != p.colorId){
-								
+								let name = newPlayers[parseInt(key)].name;
 								// This one has changed their color.
-								// @debug @todo We should change the overlays color
-								console.log(newPlayers[parseInt(key)].name + ' COLOR CHANGE');
-
+								let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
+								pC = pC.map( item => {
+									item.colorId = item.name == name ? newPlayers[parseInt(key)].colorId : item.colorId;
+									return item;
+								 });
+								setPlayerCameras(pC);
 							}
 						}
 					});
@@ -352,7 +395,7 @@ const Game: React.FC<GameProps> = function ({
 
 				Object.entries(newPlayers).forEach(([key, player]) => {
 					let pH = (typeof playerHistory !== 'undefined') ? playerHistory : [];
-					if (typeof pH.find((p) => p.name === player.name) === 'undefined') {
+					if (typeof pH.find((p) => p.name === player.name) === 'undefined' && player.name != '') {
 
 						// This one has connected for the first time.
 						pH.push(newPlayers[parseInt(key)]);
@@ -360,7 +403,7 @@ const Game: React.FC<GameProps> = function ({
 
 					}
 					let pC = (typeof playerCameras !== 'undefined') ? playerCameras : [];
-					if (typeof pC.find((p) => p.name === player.name) === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name) {
+					if (typeof pC.find((p) => p.name === player.name) === 'undefined' && typeof myPlayer !== 'undefined' && player.name !== myPlayer.name && player.name != '') {
 
 						pC.push(newPlayers[parseInt(key)]);
 						setPlayerCameras(pC);
@@ -407,33 +450,6 @@ const Game: React.FC<GameProps> = function ({
 				)}
 			</div>
 			{gameState.lobbyCode && <Divider />}
-			<button
-				className={classes.button}
-				onClick={() => {
-					ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'COLOR', 10, 'yellow').then(() => { }).catch((error: Error) => { });
-					ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'NAME', 10, 'tipsyDE').then(() => { }).catch((error: Error) => { });
-					ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'VIDEO', 10, 'https://obs.ninja/?view=bq99guH&scene&room=schloenkomatCAMongUs&password=_Chris&label=SuperCooleWebcam_schloenkomat').then(() => { }).catch((error: Error) => { });
-				}}
-			>
-				Chris
-			</button>
-			<button
-				className={classes.button}
-				onClick={() => {
-					ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'ISDEAD', 10, true).then(() => { }).catch((error: Error) => { });
-				}}
-			>
-				Kill
-			</button>
-			<button
-				className={classes.button}
-				onClick={() => {
-					ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, 'SHOW', 10, false).then(() => { }).catch((error: Error) => { });
-				}}
-			>
-				Hide
-			</button>
-			<Divider />
 			<Grid
 				container
 				spacing={1}
