@@ -80,7 +80,7 @@ const Avatar: React.FC<AvatarProps> = function ({
 				{icon}
 			</div>
 			{player.name}
-			{isImpostor ? 'IMPOSTER' : ''}
+			{isImpostor ? '' : ''}
 		</div>
 	);
 };
