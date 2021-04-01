@@ -12,8 +12,8 @@ Please use this checklist to avoid spamming:
 
 1. [ ] I am not asking a question => use the [Discord](https://discord.com/invite/rZM6bAh8EQ) if you are
 2. [ ] I am using the Steam version of Among Us
-7. [ ] I have a screenshot of any errors
-8. [ ] I have checked that someone else has not reported this using the [search bar](https://github.com/VestalisDE/AmongOBS/issues?q=is%3Aissue)
+3. [ ] I have a screenshot of any errors
+4. [ ] I have checked that someone else has not reported this using the [search bar](https://github.com/VestalisDE/AmongOBS/issues?q=is%3Aissue)
 
 **Describe the bug**
 <!-- A clear and concise description of what the bug is. -->
