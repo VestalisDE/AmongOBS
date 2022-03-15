@@ -30,6 +30,15 @@ declare module 'memoryjs' {
 	}
 
 	export function findModule(identifier: string, processId: number, callback?: Callback<ModuleObject>): ModuleObject;
+	//  virtualAllocEx(handle, address, size, allocationType, protection, callback) {
+	export function virtualAllocEx(
+		handle: number,
+		address: number | null,
+		size: number,
+		allocationType: number,
+		protection: number,
+		callback?: Callback<ModuleObject[]>
+	): number;
 
 	// Memory
 
@@ -62,6 +71,8 @@ declare module 'memoryjs' {
 
 	export function readBuffer(handle: number, address: number, size: number, callback?: Callback<Buffer>): Buffer;
 
+	export function getProcessPath(handle: number): string;
+
 	export function writeMemory<T>(handle: number, address: number, value: T, dataType: DataType): void;
 
 	export function writeBuffer(handle: number, address: number, buffer: Buffer): void;
@@ -72,7 +83,8 @@ declare module 'memoryjs' {
 		signature: string,
 		signatureType: number,
 		patternOffset: number,
-		addressOffset: number
+		addressOffset: number,
+		skip: number
 	): number;
 
 	// Functions

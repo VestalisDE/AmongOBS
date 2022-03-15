@@ -1,50 +1,41 @@
-import Store from 'electron-store';
-import React, {
-	Dispatch,
-	ErrorInfo,
-	ReactChild,
-	SetStateAction,
-	useEffect,
-	useReducer,
-	useState,
-} from 'react';
-import ReactDOM from 'react-dom';
-import Game from './Game';
+import React, { Dispatch, SetStateAction, useEffect, useReducer, useState, useRef } from 'react';
+import Voice from './Voice';
 import Menu from './Menu';
-import { App, ipcRenderer } from 'electron';
-import { AmongUsState, AppState } from '../common/AmongUsState';
-import Settings, {
-	settingsReducer,
-	sceneSettingsReducer,
-} from './settings/Settings';
-import { ISettings } from '../common/ISettings';
-import {
-	GameStateContext,
-	SettingsContext,
-	SceneSettingsContext,
-	storeConfig,
-} from './contexts';
-import { StreamingState } from '../common/StreamingState';
+import { ipcRenderer } from 'electron';
+import { AmongUsState } from '../common/AmongUsState';
+import Settings, { settingsReducer, lobbySettingsReducer, pushToTalkOptions } from './settings/Settings';
+import { GameStateContext, SettingsContext, LobbySettingsContext, PlayerColorContext } from './contexts';
 import { ThemeProvider } from '@material-ui/core/styles';
 import {
+	AutoUpdaterState,
 	IpcHandlerMessages,
 	IpcMessages,
 	IpcRendererMessages,
-	IpcStreamingMessages,
 	IpcSyncMessages,
 } from '../common/ipc-messages';
 import theme from './theme';
 import SettingsIcon from '@material-ui/icons/Settings';
+import RefreshSharpIcon from '@material-ui/icons/RefreshSharp';
 import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
+import Dialog from '@material-ui/core/Dialog';
 import makeStyles from '@material-ui/core/styles/makeStyles';
+import LinearProgress from '@material-ui/core/LinearProgress';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogActions from '@material-ui/core/DialogActions';
 import Button from '@material-ui/core/Button';
+import prettyBytes from 'pretty-bytes';
+import { IpcOverlayMessages } from '../common/ipc-messages';
+import ReactDOM from 'react-dom';
 import './css/index.css';
-import Typography from '@material-ui/core/Typography';
-import SupportLink from './SupportLink';
-
-const store = new Store<ISettings>(storeConfig);
-
+import 'source-code-pro/source-code-pro.css';
+import 'typeface-varela/index.css';
+import { DEFAULT_PLAYERCOLORS } from '../main/avatarGenerator';
+import './language/i18n';
+import { withNamespaces } from 'react-i18next';
+import { GamePlatform } from '../common/GamePlatform';
 let appVersion = '';
 if (typeof window !== 'undefined' && window.location) {
 	const query = new URLSearchParams(window.location.search.substring(1));
@@ -82,14 +73,13 @@ interface TitleBarProps {
 	setSettingsOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-const TitleBar: React.FC<TitleBarProps> = function ({
-	settingsOpen,
-	setSettingsOpen,
-}: TitleBarProps) {
+const RawTitleBar: React.FC<TitleBarProps> = function ({ settingsOpen, setSettingsOpen }: TitleBarProps) {
 	const classes = useStyles();
 	return (
 		<div className={classes.root}>
-			<span className={classes.title}>AmongOBS{appVersion}</span>
+			<span className={classes.title} style={{ marginLeft: 10 }}>
+				BetterCrewLink{appVersion}
+			</span>
 			<IconButton
 				className={classes.button}
 				style={{ left: 0 }}
@@ -100,9 +90,17 @@ const TitleBar: React.FC<TitleBarProps> = function ({
 			</IconButton>
 			<IconButton
 				className={classes.button}
+				style={{ left: 22 }}
+				size="small"
+				onClick={() => ipcRenderer.send('reload')}
+			>
+				<RefreshSharpIcon htmlColor="#777" />
+			</IconButton>
+			<IconButton
+				className={classes.button}
 				style={{ right: 0 }}
 				size="small"
-				onClick={() => ipcRenderer.send(IpcMessages.QUIT_APPLICATION)}
+				onClick={() => ipcRenderer.send(IpcMessages.QUIT_CREWLINK)}
 			>
 				<CloseIcon htmlColor="#777" />
 			</IconButton>
@@ -110,183 +108,225 @@ const TitleBar: React.FC<TitleBarProps> = function ({
 	);
 };
 
-interface ErrorBoundaryProps {
-	children: ReactChild;
+const TitleBar = React.memo(RawTitleBar);
+
+enum AppState {
+	MENU,
+	VOICE,
 }
-interface ErrorBoundaryState {
-	error?: Error;
-}
-
-class ErrorBoundary extends React.Component<
-	ErrorBoundaryProps,
-	ErrorBoundaryState
-> {
-	constructor(props: ErrorBoundaryProps) {
-		super(props);
-		this.state = {};
-	}
-
-	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-		// Update state so the next render will show the fallback UI.
-		return { error };
-	}
-
-	componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-		console.error('React Error: ', error, errorInfo);
-	}
-
-	render(): ReactChild {
-		if (this.state.error) {
-			return (
-				<div style={{ paddingTop: 16 }}>
-					<Typography align="center" variant="h6" color="error">
-						REACT ERROR
-					</Typography>
-					<Typography
-						align="center"
-						style={{
-							whiteSpace: 'pre-wrap',
-							fontSize: 12,
-							maxHeight: 200,
-							overflowY: 'auto',
-						}}
-					>
-						{this.state.error.stack}
-					</Typography>
-					<SupportLink />
-					<Button
-						style={{ margin: '10px auto', display: 'block' }}
-						variant="contained"
-						color="secondary"
-						onClick={() => window.location.reload()}
-					>
-						Reload App
-					</Button>
-				</div>
-			);
-		}
-
-		return this.props.children;
-	}
-}
-
-const App: React.FC = function () {
+// @ts-ignore
+export default function App({ t }): JSX.Element {
 	const [state, setState] = useState<AppState>(AppState.MENU);
 	const [gameState, setGameState] = useState<AmongUsState>({} as AmongUsState);
 	const [settingsOpen, setSettingsOpen] = useState(false);
-	const [streamingState, setStreamingState] = useState<StreamingState>({} as StreamingState);
+	const [diaOpen, setDiaOpen] = useState(true);
 	const [error, setError] = useState('');
-	const settings = useReducer(settingsReducer, {
-		software: 'OBS_STUDIO',
-		url: 'ws://localhost:4444',
-		token: '',
-		scenes: [],
-		sceneSettings: {
-			menu: 'AmongUs_Menu',
-			lobby: 'AmongUs_Lobby',
-			tasks: 'AmongUs_Tasks',
-			discussion: 'AmongUs_Discussion',
-			unknown: 'AmongUs_Unknown',
-		},
+	const [updaterState, setUpdaterState] = useState<AutoUpdaterState>({
+		state: 'unavailable',
 	});
-	const sceneSettings = useReducer(
-		sceneSettingsReducer,
-		settings[0].sceneSettings
-	);
+	const playerColors = useRef<string[][]>(DEFAULT_PLAYERCOLORS);
+	const overlayInitCount = useRef<number>(0);
+
+	const settings = useReducer(settingsReducer, {
+		language: 'default',
+		alwaysOnTop: true,
+		microphone: 'Default',
+		speaker: 'Default',
+		pushToTalkMode: pushToTalkOptions.VOICE,
+		serverURL: 'https://bettercrewl.ink/',
+		pushToTalkShortcut: 'V',
+		deafenShortcut: 'RControl',
+		muteShortcut: 'RAlt',
+		impostorRadioShortcut: 'F',
+		hideCode: false,
+		natFix: false,
+		mobileHost: true,
+		overlayPosition: 'right',
+		compactOverlay: false,
+		enableOverlay: false,
+		meetingOverlay: false,
+		ghostVolume: 100,
+		masterVolume: 100,
+		microphoneGain: 100,
+		micSensitivity: 0.15,
+		microphoneGainEnabled: false,
+		micSensitivityEnabled: false,
+		vadEnabled: true,
+		hardware_acceleration: true,
+		echoCancellation: true,
+		enableSpatialAudio: true,
+		obsSecret: undefined,
+		obsOverlay: false,
+		noiseSuppression: true,
+		playerConfigMap: {},
+		localLobbySettings: {
+			maxDistance: 5.32,
+			haunting: false,
+			hearImpostorsInVents: false,
+			impostersHearImpostersInvent: false,
+			impostorRadioEnabled: false,
+			commsSabotage: false,
+			deadOnly: false,
+			meetingGhostOnly: false,
+			hearThroughCameras: false,
+			wallsBlockAudio: false,
+			visionHearing: false,
+			publicLobby_on: false,
+			publicLobby_title: '',
+			publicLobby_language: 'en',
+		},
+		launchPlatform: GamePlatform.STEAM,
+		customPlatforms: {},
+	});
+	const lobbySettings = useReducer(lobbySettingsReducer, settings[0].localLobbySettings);
 
 	useEffect(() => {
+		ipcRenderer.send(IpcMessages.SEND_TO_OVERLAY, IpcOverlayMessages.NOTIFY_PLAYERCOLORS_CHANGED, playerColors.current);
+		ipcRenderer.send(IpcMessages.SEND_TO_OVERLAY, IpcOverlayMessages.NOTIFY_SETTINGS_CHANGED, settings[0]);
+		ipcRenderer.send(IpcMessages.SEND_TO_OVERLAY, IpcOverlayMessages.NOTIFY_GAME_STATE_CHANGED, gameState);
+	}, [overlayInitCount.current]);
 
+	useEffect(() => {
 		const onOpen = (_: Electron.IpcRendererEvent, isOpen: boolean) => {
-			setState(isOpen ? AppState.GAME : AppState.MENU);
+			setState(isOpen ? AppState.VOICE : AppState.MENU);
 		};
-
 		const onState = (_: Electron.IpcRendererEvent, newState: AmongUsState) => {
 			setGameState(newState);
 		};
 
-		const onUpdateStream = (_: Electron.IpcRendererEvent, newState: StreamingState) => {
-
-			let oldState = streamingState;
-			setStreamingState(newState);
-
-			if (oldState.Connected !== newState.Connected) {
-				if (newState.Connected) {
-					ipcRenderer.invoke(IpcStreamingMessages.START_STREAM).then(() => { }).catch((error: Error) => { });
-				} else {
-					ipcRenderer.invoke(IpcStreamingMessages.END_STREAM).then(() => { }).catch((error: Error) => { });
-				}
-			}
-
-		};
-
 		const onError = (_: Electron.IpcRendererEvent, error: string) => {
 			shouldInit = false;
-			console.log('Error:');
-			console.log(error);
 			setError(error);
 		};
-		let shouldInit = true;
+		const onAutoUpdaterStateChange = (_: Electron.IpcRendererEvent, state: AutoUpdaterState) => {
+			setUpdaterState((old) => ({ ...old, ...state }));
+		};
+		const onColorsChange = (_: Electron.IpcRendererEvent, colors: string[][]) => {
+			console.log('RECIEVED COLORS');
+			playerColors.current = colors;
+			ipcRenderer.send(IpcMessages.SEND_TO_OVERLAY, IpcOverlayMessages.NOTIFY_PLAYERCOLORS_CHANGED, colors);
+		};
 
+		const onOverlayInit = () => {
+			overlayInitCount.current++;
+		};
+
+		let shouldInit = true;
 		ipcRenderer
-			.invoke(IpcHandlerMessages.START_HOOK, store.get('url'))
+			.invoke(IpcHandlerMessages.START_HOOK)
 			.then(() => {
 				if (shouldInit) {
 					setGameState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE));
-					setStreamingState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE_STREAM));
 				}
 			})
 			.catch((error: Error) => {
 				if (shouldInit) {
 					shouldInit = false;
-					console.log('Error:');
-					console.log(error);
 					setError(error.message);
 				}
 			});
+		ipcRenderer.on(IpcRendererMessages.AUTO_UPDATER_STATE, onAutoUpdaterStateChange);
 		ipcRenderer.on(IpcRendererMessages.NOTIFY_GAME_OPENED, onOpen);
 		ipcRenderer.on(IpcRendererMessages.NOTIFY_GAME_STATE_CHANGED, onState);
 		ipcRenderer.on(IpcRendererMessages.ERROR, onError);
-		ipcRenderer.on(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, onUpdateStream);
+		ipcRenderer.on(IpcOverlayMessages.NOTIFY_PLAYERCOLORS_CHANGED, onColorsChange);
+		ipcRenderer.on(IpcOverlayMessages.REQUEST_INITVALUES, onOverlayInit);
+
 		return () => {
+			ipcRenderer.off(IpcRendererMessages.AUTO_UPDATER_STATE, onAutoUpdaterStateChange);
 			ipcRenderer.off(IpcRendererMessages.NOTIFY_GAME_OPENED, onOpen);
 			ipcRenderer.off(IpcRendererMessages.NOTIFY_GAME_STATE_CHANGED, onState);
 			ipcRenderer.off(IpcRendererMessages.ERROR, onError);
-			ipcRenderer.off(IpcStreamingMessages.NOTIFY_STREAM_CONNECTION, onUpdateStream);
+			ipcRenderer.off(IpcOverlayMessages.NOTIFY_PLAYERCOLORS_CHANGED, onColorsChange);
 			shouldInit = false;
 		};
 	}, []);
 
-	let page;
+	useEffect(() => {
+		ipcRenderer.send(IpcMessages.SEND_TO_OVERLAY, IpcOverlayMessages.NOTIFY_GAME_STATE_CHANGED, gameState);
+	}, [gameState]);
 
-	if (state == AppState.GAME && streamingState !== null && streamingState.Connected) {
-		page = <Game error={error} />;
-	} else {
-		page = <Menu error={error} gameState={state} obsState={streamingState} />;
+	useEffect(() => {
+		console.log(playerColors.current);
+		ipcRenderer.send(IpcMessages.SEND_TO_OVERLAY, IpcOverlayMessages.NOTIFY_PLAYERCOLORS_CHANGED, playerColors.current);
+		ipcRenderer.send(IpcMessages.SEND_TO_OVERLAY, IpcOverlayMessages.NOTIFY_SETTINGS_CHANGED, settings[0]);
+	}, [settings[0]]);
+
+	let page;
+	switch (state) {
+		case AppState.MENU:
+			page = <Menu t={t} error={error} />;
+			break;
+		case AppState.VOICE:
+			page = <Voice t={t} error={error} />;
+			break;
 	}
 
 	return (
-		<GameStateContext.Provider value={gameState}>
-			<SceneSettingsContext.Provider value={sceneSettings}>
-				<SettingsContext.Provider value={settings}>
-			<ThemeProvider theme={theme}>
-						<TitleBar
-							settingsOpen={settingsOpen}
-							setSettingsOpen={setSettingsOpen}
-						/>
-						<ErrorBoundary>
-							<>
-								<Settings
-									open={settingsOpen}
-									onClose={() => setSettingsOpen(false)}
-								/>
-								{page}
-							</>
-						</ErrorBoundary>
-			</ThemeProvider>
-				</SettingsContext.Provider>
-			</SceneSettingsContext.Provider>
-		</GameStateContext.Provider>
+		<PlayerColorContext.Provider value={playerColors.current}>
+			<GameStateContext.Provider value={gameState}>
+				<LobbySettingsContext.Provider value={lobbySettings}>
+					<SettingsContext.Provider value={settings}>
+						<ThemeProvider theme={theme}>
+							<TitleBar settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen} />
+							<Settings t={t} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+							<Dialog fullWidth open={updaterState.state !== 'unavailable' && diaOpen}>
+								{updaterState.state === 'downloaded' && updaterState.info && (
+									<DialogTitle>Update v{updaterState.info.version}</DialogTitle>
+								)}
+								{updaterState.state === 'downloading' && <DialogTitle>Updating...</DialogTitle>}
+								<DialogContent>
+									{updaterState.state === 'downloading' && updaterState.progress && (
+										<>
+											<LinearProgress variant={'determinate'} value={updaterState.progress.percent} />
+											<DialogContentText>
+												{prettyBytes(updaterState.progress.transferred)} / {prettyBytes(updaterState.progress.total)}
+											</DialogContentText>
+										</>
+									)}
+									{updaterState.state === 'downloaded' && (
+										<>
+											<LinearProgress variant={'indeterminate'} />
+											<DialogContentText>Restart now or later?</DialogContentText>
+										</>
+									)}
+									{updaterState.state === 'error' && (
+										<DialogContentText color="error">{updaterState.error}</DialogContentText>
+									)}
+								</DialogContent>
+								{updaterState.state === 'error' && (
+									<DialogActions>
+										<Button href="https://github.com/OhMyGuus/BetterCrewLink/releases/latest">Download Manually</Button>
+									</DialogActions>
+								)}
+								{updaterState.state === 'downloaded' && (
+									<DialogActions>
+										<Button
+											onClick={() => {
+												ipcRenderer.send('update-app');
+											}}
+										>
+											Now
+										</Button>
+										<Button
+											onClick={() => {
+												setDiaOpen(false);
+											}}
+										>
+											Later
+										</Button>
+									</DialogActions>
+								)}
+							</Dialog>
+							{page}
+						</ThemeProvider>
+					</SettingsContext.Provider>
+				</LobbySettingsContext.Provider>
+			</GameStateContext.Provider>
+		</PlayerColorContext.Provider>
 	);
-};
-
-ReactDOM.render(<App />, document.getElementById('app'));
+}
+// @ts-ignore
+const App2 = withNamespaces()(App);
+// @ts-ignore
+ReactDOM.render(<App2 />, document.getElementById('app'));

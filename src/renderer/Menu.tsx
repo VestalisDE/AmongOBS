@@ -1,21 +1,10 @@
 import React from 'react';
-import Store from 'electron-store';
-import { ipcRenderer } from 'electron';
 import Footer from './Footer';
-import {
-	IpcHandlerMessages,
-	IpcMessages,
-	IpcRendererMessages,
-} from '../common/ipc-messages';
-import { ISettings } from '../common/ISettings';
-import { storeConfig } from './contexts';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Typography from '@material-ui/core/Typography';
-import { AppState } from '../common/AmongUsState';
-import { StreamingState, StreamingSoftware } from '../common/StreamingState';
-
-const store = new Store<ISettings>(storeConfig);
+import SupportLink from './SupportLink';
+import LaunchButton from './LaunchButton';
 
 const useStyles = makeStyles((theme) => ({
 	root: {
@@ -37,79 +26,40 @@ const useStyles = makeStyles((theme) => ({
 		marginTop: 12,
 		marginBottom: 12,
 	},
-	button: {
-		color: 'white',
-		background: 'none',
-		padding: '2px 10px',
-		borderRadius: 10,
-		border: '4px solid white',
+	open_message: {
 		fontSize: 24,
-		outline: 'none',
-		fontWeight: 500,
-		fontFamily: '"Varela", sans-serif',
-		marginTop: 0,
-		marginBottom: 12,
-		'&:hover': {
-			borderColor: '#00ff00',
-			cursor: 'pointer',
-		},
+		marginTop: '15px',
+		marginBottom: '5px',
 	},
 }));
 
 export interface MenuProps {
+	t: (key: string) => string;
 	error: string;
-	gameState: AppState;
-	obsState: StreamingState;
 }
 
-const Menu: React.FC<MenuProps> = function ({ error, gameState, obsState }: MenuProps) {
+const Menu: React.FC<MenuProps> = function ({ t, error }: MenuProps) {
 	const classes = useStyles();
+
 	return (
 		<div className={classes.root}>
 			<div className={classes.menu}>
 				{error ? (
 					<div className={classes.error}>
 						<Typography align="center" variant="h6" color="error">
-							ERROR
+							{t('game.error')}
 						</Typography>
 						<Typography align="center" style={{ whiteSpace: 'pre-wrap' }}>
 							{error}
 						</Typography>
+						<SupportLink />
 					</div>
 				) : (
-						<>
-							{gameState == AppState.GAME ? (
-								<><span className={classes.waiting}>Among Us Connected</span></>
-							): (
-								<>
-									<span className={classes.waiting}>Waiting for Among Us</span>
-									<button
-										className={classes.button}
-										onClick={() => {
-											ipcRenderer.send(IpcMessages.OPEN_AMONG_US_GAME);
-										}}
-									>
-										Open Game
-									</button>
-								</>
-								)}
-							<CircularProgress color="primary" size={40} />
-							{obsState.Connected ? (
-								<><span className={classes.waiting}>{store.get('software') == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} Connected</span></>
-							): (
-									<>
-										<span className={classes.waiting}>{store.get('software') == StreamingSoftware.STREAMLABS_OBS ? (<>Streamlabs</>) : (<>OBS</>)} DISCONNECTED</span>
-									<button
-										className={classes.button}
-										onClick={() => {
-
-											ipcRenderer.invoke(IpcHandlerMessages.START_HOOK, store.get('url')).catch((error: Error) => { ipcRenderer.invoke(IpcRendererMessages.ERROR, error); });
-										}}
-									>
-										Connect WS
-									</button>
-								</>
-								)}
+					<>
+						<span className={classes.waiting}>{t('game.waiting')}</span>
+						<CircularProgress color="primary" size={40} />
+						<span className={classes.open_message}>{t('game.open')}</span>
+						<LaunchButton t={t} />
 					</>
 				)}
 				<Footer />

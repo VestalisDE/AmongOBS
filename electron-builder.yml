@@ -1,6 +1,6 @@
 appId: de.vestalis.amongobs
 productName: AmongOBS
-copyright: Copyright © 2021 VestalisDE
+copyright: Copyright © 2022 VestalisDE
 directories:
   output: dist
   buildResources: resources

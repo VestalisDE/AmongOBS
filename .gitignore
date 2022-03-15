@@ -15,3 +15,6 @@ yarn-error.log
 nbproject/
 *.njsproj
 *.env
+.vscode/
+package-lock.json
+debug.log

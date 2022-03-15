@@ -1,4 +1,5 @@
 import { CameraLocation, MapType } from './AmongusMap';
+import { ModsType } from './Mods';
 
 export interface AmongUsState {
 	gameState: GameState;
@@ -15,11 +16,10 @@ export interface AmongUsState {
 	lightRadius: number;
 	lightRadiusChanged: boolean;
 	closedDoors: number[];
-}
-
-export enum AppState {
-	MENU,
-	GAME,
+	currentServer: string;
+	maxPlayers: number;
+	mod: ModsType;
+	oldMeetingHud: boolean;
 }
 
 export interface Player {
@@ -29,19 +29,22 @@ export interface Player {
 	name: string;
 	nameHash: number;
 	colorId: number;
-	hatId: number;
+	hatId: string;
 	petId: number;
-	skinId: number;
+	skinId: string;
+	visorId: string;
 	disconnected: boolean;
 	isImpostor: boolean;
 	isDead: boolean;
 	taskPtr: number;
 	objectPtr: number;
 	isLocal: boolean;
+	shiftedColor : number;
 	bugged: boolean;
 	x: number;
 	y: number;
 	inVent: boolean;
+	isDummy: boolean;
 }
 
 export enum GameState {
@@ -59,28 +62,28 @@ export interface Client {
 export interface SocketClientMap {
 	[socketId: string]: Client;
 }
-export interface OtherTalking {
-	[playerId: number]: boolean; // isTalking
-}
-
-export interface OtherDead {
-	[playerId: number]: boolean; // isTalking
+export interface ClientBoolMap {
+	[clientId: number]: boolean; // isTalking
 }
 
 export interface AudioConnected {
 	[peer: string]: boolean; // isConnected
 }
 
+export interface numberStringMap {
+	[index: number]: string;
+}
+
 export interface VoiceState {
-	otherTalking: OtherTalking;
-	playerSocketIds: {
-		[index: number]: string;
-	};
-	otherDead: OtherDead;
+	otherTalking: ClientBoolMap;
+	playerSocketIds: numberStringMap;
+	otherDead: ClientBoolMap;
 	socketClients: SocketClientMap;
 	audioConnected: AudioConnected;
+	impostorRadioClientId: number;
 	localTalking: boolean;
 	localIsAlive: boolean;
 	muted: boolean;
 	deafened: boolean;
+	mod: ModsType;
 }
