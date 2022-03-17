@@ -17,7 +17,7 @@ import Peer from 'simple-peer';
 import { ipcRenderer } from 'electron';
 import VAD from './vad';
 import { ISettings, playerConfigMap, ILobbySettings } from '../common/ISettings';
-import { IpcRendererMessages, IpcMessages, IpcOverlayMessages, IpcHandlerMessages } from '../common/ipc-messages';
+import { IpcStreamingMessages, IpcRendererMessages, IpcMessages, IpcOverlayMessages, IpcHandlerMessages } from '../common/ipc-messages';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import makeStyles from '@material-ui/core/styles/makeStyles';
@@ -644,7 +644,9 @@ const Voice: React.FC<VoiceProps> = function ({ t, error: initialError }: VoiceP
 	}, [settings.microphoneGain, settings.micSensitivity]);
 
 	const updateLobby = () => {
-		console.log(gameState);
+		
+		ipcRenderer.invoke(IpcStreamingMessages.STREAM_CHANGE_SCENE, gameState.gameState).then(() => { }).catch((error: Error) => { });
+		
 		if (
 			!gameState ||
 			!hostRef.current.isHost ||

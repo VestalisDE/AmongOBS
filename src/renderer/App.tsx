@@ -78,7 +78,7 @@ const RawTitleBar: React.FC<TitleBarProps> = function ({ settingsOpen, setSettin
 	return (
 		<div className={classes.root}>
 			<span className={classes.title} style={{ marginLeft: 10 }}>
-				BetterCrewLink{appVersion}
+				AmongOBS{appVersion}
 			</span>
 			<IconButton
 				className={classes.button}
@@ -211,9 +211,12 @@ export default function App({ t }): JSX.Element {
 			overlayInitCount.current++;
 		};
 
+		// @todo URL
+		let url = 'ws://localhost:4444';
+
 		let shouldInit = true;
 		ipcRenderer
-			.invoke(IpcHandlerMessages.START_HOOK)
+			.invoke(IpcHandlerMessages.START_HOOK, url)
 			.then(() => {
 				if (shouldInit) {
 					setGameState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE));

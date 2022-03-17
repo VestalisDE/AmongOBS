@@ -1,10 +1,13 @@
 import { ipcMain } from 'electron';
 import GameReader from './GameReader';
+import StreamingControl from './StreamingControl';
 // import iohook from 'iohook';
 import { keyboardWatcher } from 'node-keyboard-watcher';
 import Store from 'electron-store';
 import { ISettings } from '../common/ISettings';
-import { IpcHandlerMessages, IpcRendererMessages, IpcSyncMessages } from '../common/ipc-messages';
+import { IpcHandlerMessages, IpcRendererMessages, IpcStreamingMessages, IpcSyncMessages } from '../common/ipc-messages';
+import { GameState } from '../common/AmongUsState';
+import { SourceEditTypes } from '../common/StreamingState';
 // import { GenerateAvatars } from './avatarGenerator';
 
 const store = new Store<ISettings>();
@@ -16,8 +19,10 @@ if (playerConfigMapLength > 50) {
 	store.set('playerConfigMap', {});
 }
 
+let connected = false;
 let readingGame = false;
 export let gameReader: GameReader;
+let streamingControl: StreamingControl;
 
 let pushToTalkShortcut: K | undefined;
 let deafenShortcut: K | undefined;
@@ -57,7 +62,11 @@ ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE, (event) => {
 	event.returnValue = gameReader.lastState;
 });
 
-ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
+ipcMain.on(IpcSyncMessages.GET_INITIAL_STATE_STREAM, (event) => {
+	event.returnValue = streamingControl.streamingState;
+});
+
+ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event, url: String) => {
 	if (!readingGame) {
 		readingGame = true;
 		resetKeyHooks();
@@ -112,6 +121,43 @@ ipcMain.handle(IpcHandlerMessages.START_HOOK, async (event) => {
 		gameReader.amongUs = null;
 		gameReader.checkProcessDelay = 0;
 	}
+	if (!connected) {
+		streamingControl = new StreamingControl(url, event.sender.send.bind(event.sender));
+		connected = true;
+	}
+});
+
+ipcMain.handle(IpcStreamingMessages.START_STREAM, async () => {
+	connected = true;
+	//streamingControl.prepareStream();
+});
+
+ipcMain.handle(IpcStreamingMessages.END_STREAM, async () => {
+	connected = false;
+});
+
+ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_SCENE, async (event, gameState: GameState) => {
+	if (gameReader && connected) {
+		streamingControl.changeScene(gameState);
+	}
+});
+
+ipcMain.handle(IpcStreamingMessages.STREAM_CHANGE_PLAYERINFORMATION, async (event, type: SourceEditTypes, playerNumber: number, value: any, sceneId = '') => {
+	/*
+	if (gameReader && connected) {
+		switch (type) {
+			case SourceEditTypes.NAME:
+			case SourceEditTypes.COLOR:
+			case SourceEditTypes.VIDEO:
+				streamingControl.changePlayerInformation(type, playerNumber, value);
+				break;
+			case SourceEditTypes.ISDEAD:
+			case SourceEditTypes.SHOW:
+				streamingControl.setSourceVisibility(type, playerNumber, value, sceneId);
+				break;
+		}
+	}
+	*/
 });
 
 ipcMain.on('reload', async () => {

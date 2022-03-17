@@ -15,6 +15,7 @@ export enum IpcMessages {
 // Renderer --> Main (sendSync/on)
 export enum IpcSyncMessages {
 	GET_INITIAL_STATE = 'GET_INITIAL_STATE',
+	GET_INITIAL_STATE_STREAM = 'GET_INITIAL_STATE_STREAM',
 }
 
 export enum IpcOverlayMessages {
@@ -28,6 +29,7 @@ export enum IpcOverlayMessages {
 // Renderer --> Main (invoke/handle)
 export enum IpcHandlerMessages {
 	START_HOOK = 'START_HOOK',
+	END_STREAM = 'END_STREAM',
 	RESET_KEYHOOKS = 'RESET_KEYHOOKS',
 	JOIN_LOBBY = 'JOIN_LOBBY',
 	JOIN_LOBBY_ERROR = 'JOIN_LOBBY_ERROR',
@@ -44,6 +46,15 @@ export enum IpcRendererMessages {
 	IMPOSTOR_RADIO = 'IMPOSTOR_RADIO',
 	ERROR = 'ERROR',
 	AUTO_UPDATER_STATE = 'AUTO_UPDATER_STATE',
+}
+
+export enum IpcStreamingMessages {
+	START_STREAM = 'START_STREAM',
+	END_STREAM = 'END_STREAM',
+	NOTIFY_STREAM_CONNECTION = 'NOTIFY_STREAM_CONNECTION',
+	STREAM_GET_SCENES = 'STREAM_GET_SCENES',
+	STREAM_CHANGE_SCENE = 'STREAM_CHANGE_SCENE',
+	STREAM_CHANGE_PLAYERINFORMATION = 'STREAM_CHANGE_PLAYERINFORMATION',
 }
 
 export interface AutoUpdaterState {
