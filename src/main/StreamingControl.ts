@@ -1,11 +1,11 @@
-//import Store from 'electron-store';
-//import { ISettings } from '../common/ISettings';
+import Store from 'electron-store';
+import { ISettings } from '../common/ISettings';
 import { IpcStreamingMessages } from '../common/ipc-messages';
 import { StreamingState, StreamingSoftware, Scene, SceneSource, SourceEditTypes, WebsocketMessages, WebsocketUpdates } from '../common/StreamingState';
-//import { storeConfig } from '../renderer/contexts';
+import { storeConfig } from '../renderer/contexts';
 import { GameState } from '../common/AmongUsState';
 
-//const store = new Store<ISettings>(storeConfig);
+const store = new Store<ISettings>(storeConfig);
 const sha256 = require('crypto-js/sha256');
 const Base64 = require('crypto-js/enc-base64');
 const WebSocket = require('ws');
@@ -55,9 +55,7 @@ export default class StreamingControl {
 	// Refined
 	onopen = function (this: StreamingControl, e: any) {
 		
-		// @todo TOKEN
-		let token = 'xxxxxxxxx'; //store.get('token');
-
+		let token = store.get('token');
 		switch (this.streamingState.Software) {
 			case StreamingSoftware.OBS_STUDIO:
 				this.ws.send(JSON.stringify({ 'message-id': String(WebsocketMessages.GET_AUTH_REQUIRED), 'request-type': 'GetAuthRequired' }));
@@ -70,8 +68,8 @@ export default class StreamingControl {
 
 	onmessage = function (this: StreamingControl, event: any) {
 
-		// @todo TOKEN
-		let token = 'xxxxxxxxx'; //store.get('token');
+		let token = store.get('token');
+		// @todo send Webhooks to any other system (twitch chat)
 
 		let data = JSON.parse(event.data);
 		switch (this.streamingState.Software) {
@@ -269,51 +267,40 @@ export default class StreamingControl {
 	// Currently unused
 	changeScene(gameState: GameState): void {
 
+		//const sceneSettings = null;//store.get('sceneSettings');
+		let sceneId: string;
 		let visible = true;
 
 		switch (gameState) {
 			case GameState.LOBBY:
-				visible = true;
-				break;
-			case GameState.TASKS:
-				visible = false;
-				break;
-			case GameState.DISCUSSION:
-				visible = false;
-				break;
-			case GameState.MENU:
-				visible = true;
-				break;
-			case GameState.UNKNOWN:
-			default:
-				visible = true;
-		}
-		
-		let sceneId = '[N]_Capture';
-		let itemId = 'Capture_Game_Blur';
-		this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'scene-name': sceneId, 'item': itemId, 'visible': visible }));
-
-		/*
-		//const sceneSettings = null;//store.get('sceneSettings');
-		let sceneId: string;
-
-		switch (gameState) {
-			case GameState.LOBBY:
 				sceneId = 'sceneSettings.lobby';
+				sceneId = '[S]_Fullscreen';
+				visible = true;
 				break;
 			case GameState.TASKS:
 				sceneId = 'sceneSettings.tasks';
+				sceneId = '[S]_Capture';
+				visible = false;
 				break;
 			case GameState.DISCUSSION:
 				sceneId = 'sceneSettings.discussion';
+				sceneId = '[S]_Capture_Small';
+				visible = false;
 				break;
 			case GameState.MENU:
 				sceneId = 'sceneSettings.menu';
+				sceneId = '[S]_JustChatting';
+				visible = true;
 				break;
 			case GameState.UNKNOWN:
 			default:
 				sceneId = 'sceneSettings.unknown';
+				sceneId = '[S]_Ende';
+				visible = true;
 		}
+		// sceneId = '[N]_Capture';
+		//let itemId = 'Capture_Game_Blur';
+		//this.ws.send(JSON.stringify({ 'message-id': WebsocketMessages.SET_SCENE_ITEM_PROPERTIES, 'request-type': 'SetSceneItemProperties', 'scene-name': sceneId, 'item': itemId, 'visible': visible }));
 
 		console.log(gameState);
 		console.log(sceneId);
@@ -326,7 +313,6 @@ export default class StreamingControl {
 				this.ws.send(JSON.stringify({ id: WebsocketMessages.CHANGE_SCENE, jsonrpc: '2.0', method: 'makeSceneActive', params: { resource: 'ScenesService', args: [sceneId] }, }));
 				break;
 		}
-		*/
 
 	}
 

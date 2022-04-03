@@ -1,10 +1,12 @@
 import React, { Dispatch, SetStateAction, useEffect, useReducer, useState, useRef } from 'react';
+import Store from 'electron-store';
 import Voice from './Voice';
 import Menu from './Menu';
 import { ipcRenderer } from 'electron';
 import { AmongUsState } from '../common/AmongUsState';
 import Settings, { settingsReducer, lobbySettingsReducer, pushToTalkOptions } from './settings/Settings';
-import { GameStateContext, SettingsContext, LobbySettingsContext, PlayerColorContext } from './contexts';
+import { GameStateContext, SettingsContext, LobbySettingsContext, PlayerColorContext, storeConfig } from './contexts';
+import { ISettings } from '../common/ISettings';
 import { ThemeProvider } from '@material-ui/core/styles';
 import {
 	AutoUpdaterState,
@@ -36,6 +38,9 @@ import { DEFAULT_PLAYERCOLORS } from '../main/avatarGenerator';
 import './language/i18n';
 import { withNamespaces } from 'react-i18next';
 import { GamePlatform } from '../common/GamePlatform';
+
+const store = new Store<ISettings>(storeConfig);
+
 let appVersion = '';
 if (typeof window !== 'undefined' && window.location) {
 	const query = new URLSearchParams(window.location.search.substring(1));
@@ -50,6 +55,7 @@ const useStyles = makeStyles(() => ({
 		backgroundColor: '#1d1a23',
 		top: 0,
 		WebkitAppRegion: 'drag',
+		zIndex: 100,
 	},
 	title: {
 		width: '100%',
@@ -216,7 +222,7 @@ export default function App({ t }): JSX.Element {
 
 		let shouldInit = true;
 		ipcRenderer
-			.invoke(IpcHandlerMessages.START_HOOK, url)
+			.invoke(IpcHandlerMessages.START_HOOK, store.get('url'))
 			.then(() => {
 				if (shouldInit) {
 					setGameState(ipcRenderer.sendSync(IpcSyncMessages.GET_INITIAL_STATE));

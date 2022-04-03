@@ -37,6 +37,20 @@ export interface ISettings {
 
 	launchPlatform: GamePlatform | string;
 	customPlatforms: GamePlatformMap;
+
+	software: string;
+	url: string;
+	token: string;
+	scenes: Array<object>;
+	sceneSettings: ISceneSettings;
+}
+
+export interface ISceneSettings {
+	menu: string;
+	lobby: string;
+	tasks: string;
+	discussion: string;
+	unknown: string;
 }
 
 export interface ILobbySettings {
