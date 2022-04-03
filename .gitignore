@@ -18,3 +18,4 @@ nbproject/
 .vscode/
 package-lock.json
 debug.log
+*.code-workspace
